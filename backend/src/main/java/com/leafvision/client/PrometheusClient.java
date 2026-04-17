@@ -23,10 +23,9 @@ public class PrometheusClient {
     }
 
     public boolean checkHealth(String host, Integer port) {
-        String url = String.format("http://%s:%d/-/healthy", host, port);
         try {
             String response = webClient.get()
-                    .uri(url)
+                    .uri(String.format("http://%s:%d/-/healthy", host, port))
                     .retrieve()
                     .bodyToMono(String.class)
                     .timeout(Duration.ofSeconds(5))
@@ -39,10 +38,13 @@ public class PrometheusClient {
     }
 
     public JSONObject query(String host, Integer port, String query) {
-        String url = String.format("http://%s:%d/api/v1/query", host, port);
         try {
             String response = webClient.get()
                     .uri(uriBuilder -> uriBuilder
+                            .scheme("http")
+                            .host(host)
+                            .port(port)
+                            .path("/api/v1/query")
                             .queryParam("query", query)
                             .build())
                     .retrieve()
@@ -57,10 +59,13 @@ public class PrometheusClient {
     }
 
     public JSONObject queryRange(String host, Integer port, String query, long start, long end, String step) {
-        String url = String.format("http://%s:%d/api/v1/query_range", host, port);
         try {
             String response = webClient.get()
                     .uri(uriBuilder -> uriBuilder
+                            .scheme("http")
+                            .host(host)
+                            .port(port)
+                            .path("/api/v1/query_range")
                             .queryParam("query", query)
                             .queryParam("start", start)
                             .queryParam("end", end)
@@ -78,10 +83,9 @@ public class PrometheusClient {
     }
 
     public JSONObject getMetrics(String host, Integer port) {
-        String url = String.format("http://%s:%d/api/v1/metadata", host, port);
         try {
             String response = webClient.get()
-                    .uri(url)
+                    .uri(String.format("http://%s:%d/api/v1/metadata", host, port))
                     .retrieve()
                     .bodyToMono(String.class)
                     .timeout(Duration.ofSeconds(10))
@@ -94,10 +98,9 @@ public class PrometheusClient {
     }
 
     public JSONObject getRules(String host, Integer port) {
-        String url = String.format("http://%s:%d/api/v1/rules", host, port);
         try {
             String response = webClient.get()
-                    .uri(url)
+                    .uri(String.format("http://%s:%d/api/v1/rules", host, port))
                     .retrieve()
                     .bodyToMono(String.class)
                     .timeout(Duration.ofSeconds(10))

@@ -51,17 +51,23 @@ const handleQuery = async () => {
   loading.value = true
   try {
     const res = await queryMetrics(queryForm.value)
-    if (res.code === 200) {
-      const data = res.data || {}
-      if (data.values?.length) {
+    if (res.code === 200 && res.data) {
+      const data = res.data
+      if (data.values && data.values.length > 0) {
         chartData.value = data.values.map(item => ({
-          time: new Date(item[0] * 1000).toLocaleTimeString(),
-          value: parseFloat(item[1])
+          time: new Date(item.timestamp * 1000).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+          value: parseFloat(item.value).toFixed(2)
         }))
+        ElMessage.success('查询成功')
+      } else {
+        chartData.value = []
+        ElMessage.warning('没有查询到数据')
       }
-      ElMessage.success('查询成功')
+    } else {
+      ElMessage.error(res.message || '查询失败')
     }
   } catch (error) {
+    console.error(error)
     ElMessage.error('查询失败')
   } finally {
     loading.value = false

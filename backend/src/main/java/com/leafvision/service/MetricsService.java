@@ -39,11 +39,75 @@ public class MetricsService {
             return response;
         }
         
-        JSONObject result = prometheusClient.query(server.getIp(), server.getPort(), metric);
+        long end = System.currentTimeMillis() / 1000;
+        long start;
+        String step = "15s";
+        
+        if (timeRange == null || timeRange.isEmpty()) {
+            timeRange = "1h";
+        }
+        
+        switch (timeRange) {
+            case "15m":
+                start = end - 900;
+                step = "15s";
+                break;
+            case "30m":
+                start = end - 1800;
+                step = "30s";
+                break;
+            case "1h":
+                start = end - 3600;
+                step = "1m";
+                break;
+            case "6h":
+                start = end - 21600;
+                step = "5m";
+                break;
+            case "12h":
+                start = end - 43200;
+                step = "10m";
+                break;
+            case "24h":
+                start = end - 86400;
+                step = "15m";
+                break;
+            case "7d":
+                start = end - 604800;
+                step = "1h";
+                break;
+            default:
+                start = end - 3600;
+                step = "1m";
+        }
+        
+        JSONObject result = prometheusClient.queryRange(server.getIp(), server.getPort(), metric, start, end, step);
         
         if (result != null) {
             response.put("status", result.getString("status"));
-            response.put("data", result.get("data"));
+            JSONObject data = result.getJSONObject("data");
+            if (data != null) {
+                JSONArray results = data.getJSONArray("result");
+                if (results != null && !results.isEmpty()) {
+                    JSONArray values = results.getJSONObject(0).getJSONArray("values");
+                    List<Map<String, Object>> formattedValues = new ArrayList<>();
+                    if (values != null) {
+                        for (int i = 0; i < values.size(); i++) {
+                            JSONArray point = values.getJSONArray(i);
+                            Map<String, Object> pointMap = new HashMap<>();
+                            pointMap.put("timestamp", point.getLong(0));
+                            pointMap.put("value", point.getDouble(1));
+                            formattedValues.add(pointMap);
+                        }
+                    }
+                    Map<String, Object> responseData = new HashMap<>();
+                    responseData.put("values", formattedValues);
+                    responseData.put("metric", data.get("result"));
+                    response.put("data", responseData);
+                } else {
+                    response.put("data", new HashMap<>());
+                }
+            }
         } else {
             response.put("status", "error");
             response.put("error", "Failed to query Prometheus");

@@ -2,7 +2,6 @@ package com.leafvision.controller;
 
 import com.leafvision.entity.Result;
 import com.leafvision.entity.Role;
-import com.leafvision.entity.Permission;
 import com.leafvision.service.RoleService;
 import com.leafvision.service.AuditLogService;
 import org.springframework.web.bind.annotation.*;

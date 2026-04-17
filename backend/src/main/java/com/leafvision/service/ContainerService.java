@@ -1,7 +1,9 @@
 package com.leafvision.service;
 
+import com.alibaba.fastjson.JSONObject;
 import com.leafvision.client.PrometheusClient;
 import com.leafvision.entity.Container;
+import com.leafvision.entity.Server;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -10,29 +12,61 @@ import java.util.*;
 public class ContainerService {
 
     private final PrometheusClient prometheusClient;
+    private final ServerService serverService;
 
-    public ContainerService(PrometheusClient prometheusClient) {
+    public ContainerService(PrometheusClient prometheusClient, ServerService serverService) {
         this.prometheusClient = prometheusClient;
+        this.serverService = serverService;
     }
 
     public List<Container> getAllContainers() {
         List<Container> containers = new ArrayList<>();
+        
+        List<Server> promServers = serverService.getServersByType("prometheus-master");
+        if (promServers.isEmpty()) {
+            promServers = serverService.getServersByType("prometheus-node");
+        }
+        
+        if (promServers.isEmpty()) {
+            containers.add(createDemoContainer("container-1", "nginx", "nginx:latest", "running"));
+            containers.add(createDemoContainer("container-2", "redis", "redis:alpine", "running"));
+            containers.add(createDemoContainer("container-3", "mysql", "mysql:8.0", "exited"));
+            return containers;
+        }
+        
+        Server promServer = promServers.stream()
+                .filter(s -> "online".equals(s.getStatus()))
+                .findFirst()
+                .orElse(null);
+        
+        if (promServer == null) {
+            containers.add(createDemoContainer("container-1", "nginx", "nginx:latest", "running"));
+            containers.add(createDemoContainer("container-2", "redis", "redis:alpine", "running"));
+            containers.add(createDemoContainer("container-3", "mysql", "mysql:8.0", "exited"));
+            return containers;
+        }
+        
         try {
-            Map<String, Object> response = prometheusClient.query("container_last_seen");
-            if (response != null && response.containsKey("data")) {
-                Map<String, Object> data = (Map<String, Object>) response.get("data");
-                List<Map<String, Object>> results = (List<Map<String, Object>>) data.get("result");
-                if (results != null) {
-                    for (Map<String, Object> result : results) {
-                        Container container = new Container();
-                        Map<String, String> metric = (Map<String, String>) result.get("metric");
-                        if (metric != null) {
-                            container.setId(metric.get("id"));
-                            container.setName(metric.get("name"));
-                            container.setImage(metric.get("image"));
-                            container.setStatus("running");
+            JSONObject response = prometheusClient.query(promServer.getIp(), promServer.getPort(), "container_last_seen");
+            if (response != null && "success".equals(response.getString("status"))) {
+                JSONObject data = response.getJSONObject("data");
+                if (data != null) {
+                    var results = data.getJSONArray("result");
+                    if (results != null) {
+                        for (int i = 0; i < results.size(); i++) {
+                            JSONObject result = results.getJSONObject(i);
+                            Container container = new Container();
+                            JSONObject metric = result.getJSONObject("metric");
+                            if (metric != null) {
+                                container.setId(metric.getString("id"));
+                                container.setName(metric.getString("name"));
+                                container.setImage(metric.getString("image"));
+                                container.setStatus("running");
+                                container.setServerId(promServer.getId());
+                                container.setServerName(promServer.getName());
+                            }
+                            containers.add(container);
                         }
-                        containers.add(container);
                     }
                 }
             }

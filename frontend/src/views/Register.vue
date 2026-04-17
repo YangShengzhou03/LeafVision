@@ -2,6 +2,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { register } from '@/api'
 
 const router = useRouter()
 const loading = ref(false)
@@ -53,11 +54,14 @@ const handleRegister = async () => {
 
     loading.value = true
     try {
-      await new Promise(resolve => setTimeout(resolve, 800))
+      await register({
+        email: form.email,
+        password: form.password
+      })
       ElMessage.success('注册成功，请登录')
       router.push('/login')
     } catch (error) {
-      ElMessage.error('注册失败，请稍后重试')
+      ElMessage.error(error.response?.data?.message || '注册失败，请稍后重试')
     } finally {
       loading.value = false
     }
@@ -157,7 +161,7 @@ const handleBackHome = () => router.push('/')
 
           <div class="form-agree">
             <el-checkbox v-model="form.agree">
-              我已阅读并同意 <router-link to="/terms" class="terms-link">服务条款</router-link> 和 <router-link to="/privacy" class="terms-link">隐私政策</router-link>
+              我已阅读并同意服务条款和隐私政策
             </el-checkbox>
           </div>
 
@@ -380,15 +384,6 @@ const handleBackHome = () => router.push('/')
   font-size: 13px;
   color: var(--color-text-secondary);
   line-height: 1.30;
-}
-
-.terms-link {
-  color: var(--site-context-highlight-color);
-  transition: color 0.2s;
-}
-
-.terms-link:hover {
-  color: var(--site-context-focus-color);
 }
 
 .btn-submit {

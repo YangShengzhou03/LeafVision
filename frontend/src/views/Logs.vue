@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { Search, Download, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { getLogs } from '@/api'
+import { getLogs, getServerList } from '@/api'
 import { downloadFile } from '@/utils'
 
 const loading = ref(false)
@@ -17,10 +17,7 @@ const queryForm = ref({
 })
 
 const serverOptions = ref([
-  { label: '全部服务器', value: null },
-  { label: 'Web Server 01', value: 1 },
-  { label: 'DB Server 01', value: 2 },
-  { label: 'Cache Server 01', value: 3 }
+  { label: '全部服务器', value: null }
 ])
 
 const levelOptions = [
@@ -30,6 +27,20 @@ const levelOptions = [
   { label: 'WARN', value: 'warn' },
   { label: 'ERROR', value: 'error' }
 ]
+
+const fetchServerOptions = async () => {
+  try {
+    const res = await getServerList()
+    if (res.code === 200 && res.data) {
+      serverOptions.value = [
+        { label: '全部服务器', value: null },
+        ...res.data.map(s => ({ label: s.name, value: s.id }))
+      ]
+    }
+  } catch (error) {
+    console.error(error)
+  }
+}
 
 const handleSearch = async () => {
   loading.value = true
@@ -63,7 +74,15 @@ const getLevelClass = (level) => {
   return ''
 }
 
-onMounted(() => handleSearch())
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return '-'
+  return dateStr.replace('T', ' ').substring(0, 19)
+}
+
+onMounted(async () => {
+  await fetchServerOptions()
+  handleSearch()
+})
 </script>
 
 <template>
@@ -129,7 +148,7 @@ onMounted(() => handleSearch())
       <div class="card-body">
         <div class="log-list">
           <div v-for="(log, index) in logList" :key="index" class="log-item">
-            <span class="log-time">{{ log.time }}</span>
+            <span class="log-time">{{ formatDateTime(log.time) }}</span>
             <span :class="['log-level', getLevelClass(log.level)]">{{ log.level.toUpperCase() }}</span>
             <span class="log-source">{{ log.source }}</span>
             <span class="log-message">{{ log.message }}</span>

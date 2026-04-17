@@ -3,7 +3,7 @@ import { ref, computed, markRaw } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   Monitor, Setting, Warning, DataLine, Document, User, Tools,
-  Fold, Expand, Connection, Timer, Bell, PieChart, Key, House, SwitchButton, List
+  Fold, Expand, Connection, Timer, Bell, PieChart, Key, House, SwitchButton, List, Folder
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
@@ -18,6 +18,7 @@ const allMenuItems = [
   { path: '/monitor/dashboard', title: '监控总览', icon: markRaw(Monitor), permission: PERMISSION_CODE.DASHBOARD },
   { path: '/monitor/realtime', title: '实时监控', icon: markRaw(Timer), permission: PERMISSION_CODE.REALTIME },
   { path: '/monitor/servers', title: '主机管理', icon: markRaw(House), permission: PERMISSION_CODE.SERVERS },
+  { path: '/monitor/server-groups', title: '服务器分组', icon: markRaw(Folder), permission: PERMISSION_CODE.SERVER_GROUPS },
   { path: '/monitor/containers', title: '容器管理', icon: markRaw(Connection), permission: PERMISSION_CODE.CONTAINERS },
   { path: '/monitor/services', title: '服务管理', icon: markRaw(Tools), permission: PERMISSION_CODE.SERVICES },
   { path: '/monitor/metrics', title: '指标检索', icon: markRaw(DataLine), permission: PERMISSION_CODE.METRICS },
@@ -69,9 +70,9 @@ const handleLogout = async () => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    userStore.logout()
+    await userStore.logout()
     ElMessage.success('已退出登录')
-    router.push('/login')
+    router.push('/')
   } catch {
   }
 }

@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.leafvision.client.AlertmanagerClient;
 import com.leafvision.client.PrometheusClient;
 import com.leafvision.entity.Server;
+import com.leafvision.exception.BusinessException;
 import com.leafvision.mapper.ServerMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +47,7 @@ public class ServerService {
     @Transactional
     public Server addServer(Server server) {
         if (serverMapper.existsByIpAndPort(server.getIp(), server.getPort())) {
-            throw new RuntimeException("Server already exists: " + server.getIp() + ":" + server.getPort());
+            throw new BusinessException("服务器已存在: " + server.getIp() + ":" + server.getPort());
         }
         server.setStatus("unknown");
         server.setCreatedAt(LocalDateTime.now());
@@ -59,7 +60,7 @@ public class ServerService {
     public Server updateServer(Long id, Server server) {
         Server existing = serverMapper.selectById(id);
         if (existing == null) {
-            throw new RuntimeException("Server not found: " + id);
+            throw new BusinessException("服务器不存在: " + id);
         }
         
         existing.setName(server.getName());

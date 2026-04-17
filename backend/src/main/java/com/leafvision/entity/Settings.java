@@ -1,14 +1,77 @@
 package com.leafvision.entity;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 
+import java.time.LocalDateTime;
+
+@TableName("settings")
 public class Settings {
-    private Map<String, Object> data = new HashMap<>();
-
-    public Map<String, Object> getData() { return data; }
-    public void setData(Map<String, Object> data) { this.data = data; }
     
-    public Object get(String key) { return data.get(key); }
-    public void set(String key, Object value) { data.put(key, value); }
+    @TableId(type = IdType.AUTO)
+    private Long id;
+    
+    private String settingKey;
+    private String settingValue;
+    private String settingType;
+    private String description;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getSettingKey() {
+        return settingKey;
+    }
+
+    public void setSettingKey(String settingKey) {
+        this.settingKey = settingKey;
+    }
+
+    public String getSettingValue() {
+        return settingValue;
+    }
+
+    public void setSettingValue(String settingValue) {
+        this.settingValue = settingValue;
+    }
+
+    public String getSettingType() {
+        return settingType;
+    }
+
+    public void setSettingType(String settingType) {
+        this.settingType = settingType;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
 }

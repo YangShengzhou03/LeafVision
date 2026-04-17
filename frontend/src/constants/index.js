@@ -1,7 +1,7 @@
 export const SERVER_TYPES = [
-  { value: 'linux', label: 'Linux' },
-  { value: 'windows', label: 'Windows' },
-  { value: 'docker', label: 'Docker' }
+  { value: 'prometheus-master', label: 'Prometheus 主节点' },
+  { value: 'prometheus-node', label: 'Prometheus 从节点' },
+  { value: 'alertmanager', label: 'Alertmanager' }
 ]
 
 export const METRIC_OPTIONS = [
@@ -44,7 +44,8 @@ export const PERMISSION_CODE = {
   ROLES: 'ROLES',
   PERMISSIONS: 'PERMISSIONS',
   AUDIT_LOGS: 'AUDIT_LOGS',
-  SETTINGS: 'SETTINGS'
+  SETTINGS: 'SETTINGS',
+  SERVER_GROUPS: 'SERVER_GROUPS'
 }
 
 export const ROLE_NAMES = {
@@ -52,9 +53,3 @@ export const ROLE_NAMES = {
   OPERATOR: '运维人员',
   VIEWER: '访客'
 }
-
-export const DEMO_USERS = [
-  { username: 'admin', password: '123456', role: 'ADMIN', name: '管理员' },
-  { username: 'operator', password: '123456', role: 'OPERATOR', name: '运维人员' },
-  { username: 'viewer', password: '123456', role: 'VIEWER', name: '访客' }
-]

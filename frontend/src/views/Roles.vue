@@ -105,6 +105,11 @@ const getStatusText = (status) => {
   return status === 1 ? '启用' : '禁用'
 }
 
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return '-'
+  return dateStr.replace('T', ' ').substring(0, 19)
+}
+
 onMounted(() => {
   fetchRoles()
   fetchPermissions()
@@ -151,7 +156,7 @@ onMounted(() => {
                 {{ getStatusText(role.status) }}
               </span>
             </td>
-            <td>{{ role.createdAt }}</td>
+            <td>{{ formatDateTime(role.createdAt) }}</td>
             <td>
               <div class="action-btns">
                 <button class="btn-link" @click="handleEdit(role)">编辑</button>

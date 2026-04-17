@@ -23,10 +23,9 @@ public class AlertmanagerClient {
     }
 
     public boolean checkHealth(String host, Integer port) {
-        String url = String.format("http://%s:%d/-/healthy", host, port);
         try {
             String response = webClient.get()
-                    .uri(url)
+                    .uri(String.format("http://%s:%d/-/healthy", host, port))
                     .retrieve()
                     .bodyToMono(String.class)
                     .timeout(Duration.ofSeconds(5))
@@ -39,10 +38,13 @@ public class AlertmanagerClient {
     }
 
     public JSONObject getAlerts(String host, Integer port, boolean active, boolean silenced, boolean inhibited) {
-        String url = String.format("http://%s:%d/api/v1/alerts", host, port);
         try {
             String response = webClient.get()
                     .uri(uriBuilder -> uriBuilder
+                            .scheme("http")
+                            .host(host)
+                            .port(port)
+                            .path("/api/v1/alerts")
                             .queryParam("active", active)
                             .queryParam("silenced", silenced)
                             .queryParam("inhibited", inhibited)
@@ -59,10 +61,9 @@ public class AlertmanagerClient {
     }
 
     public JSONObject getStatus(String host, Integer port) {
-        String url = String.format("http://%s:%d/api/v1/status", host, port);
         try {
             String response = webClient.get()
-                    .uri(url)
+                    .uri(String.format("http://%s:%d/api/v1/status", host, port))
                     .retrieve()
                     .bodyToMono(String.class)
                     .timeout(Duration.ofSeconds(5))
@@ -75,10 +76,9 @@ public class AlertmanagerClient {
     }
 
     public JSONObject getSilences(String host, Integer port) {
-        String url = String.format("http://%s:%d/api/v1/silences", host, port);
         try {
             String response = webClient.get()
-                    .uri(url)
+                    .uri(String.format("http://%s:%d/api/v1/silences", host, port))
                     .retrieve()
                     .bodyToMono(String.class)
                     .timeout(Duration.ofSeconds(10))
@@ -91,10 +91,9 @@ public class AlertmanagerClient {
     }
 
     public boolean createSilence(String host, Integer port, JSONObject silence) {
-        String url = String.format("http://%s:%d/api/v1/silences", host, port);
         try {
             String response = webClient.post()
-                    .uri(url)
+                    .uri(String.format("http://%s:%d/api/v1/silences", host, port))
                     .bodyValue(silence.toJSONString())
                     .retrieve()
                     .bodyToMono(String.class)
@@ -108,10 +107,9 @@ public class AlertmanagerClient {
     }
 
     public boolean deleteSilence(String host, Integer port, String silenceId) {
-        String url = String.format("http://%s:%d/api/v1/silence/%s", host, port, silenceId);
         try {
             webClient.delete()
-                    .uri(url)
+                    .uri(String.format("http://%s:%d/api/v1/silence/%s", host, port, silenceId))
                     .retrieve()
                     .bodyToMono(String.class)
                     .timeout(Duration.ofSeconds(10))

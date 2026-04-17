@@ -11,8 +11,8 @@ const loading = ref(false)
 const showPassword = ref(false)
 
 const form = ref({
-  username: '',
-  password: '',
+  username: 'admin',
+  password: '123456',
   remember: false
 })
 
@@ -37,7 +37,7 @@ const handleLogin = async () => {
 
     loading.value = true
     try {
-      const result = await userStore.login(form.username, form.password, form.remember)
+      const result = await userStore.login(form.value.username, form.value.password, form.value.remember)
 
       if (!result.success) {
         ElMessage.error(result.message)

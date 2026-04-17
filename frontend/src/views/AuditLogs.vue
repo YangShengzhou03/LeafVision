@@ -92,6 +92,11 @@ const getStatusText = (status) => {
   return status === 1 ? '成功' : '失败'
 }
 
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return '-'
+  return dateStr.replace('T', ' ').substring(0, 19)
+}
+
 const handleSearch = () => {
   fetchAuditLogs()
 }
@@ -162,7 +167,7 @@ onMounted(() => fetchAuditLogs())
         </thead>
         <tbody v-if="!loading">
           <tr v-for="log in filteredLogs" :key="log.id">
-            <td class="time-cell">{{ log.createdAt }}</td>
+            <td class="time-cell">{{ formatDateTime(log.createdAt) }}</td>
             <td class="user-cell">{{ log.username || '-' }}</td>
             <td>
               <span :class="['operation-badge', getOperationClass(log.operation)]">

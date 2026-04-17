@@ -15,7 +15,7 @@ public class AlertRule {
     private String name;
     private String expr;
     private String duration;
-    private String level;
+    private String severity;
     private Boolean enabled;
     private String summary;
     private String description;
@@ -60,12 +60,12 @@ public class AlertRule {
         this.duration = duration;
     }
 
-    public String getLevel() {
-        return level;
+    public String getSeverity() {
+        return severity;
     }
 
-    public void setLevel(String level) {
-        this.level = level;
+    public void setSeverity(String severity) {
+        this.severity = severity;
     }
 
     public Boolean getEnabled() {

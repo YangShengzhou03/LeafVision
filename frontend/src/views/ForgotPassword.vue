@@ -2,6 +2,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { forgotPassword } from '@/api'
 
 const router = useRouter()
 const loading = ref(false)
@@ -28,11 +29,11 @@ const handleSubmit = async () => {
 
     loading.value = true
     try {
-      await new Promise(resolve => setTimeout(resolve, 800))
+      await forgotPassword({ email: form.email })
       step.value = 2
       ElMessage.success('重置链接已发送到您的邮箱')
     } catch (error) {
-      ElMessage.error('发送失败，请稍后重试')
+      ElMessage.error(error.response?.data?.message || '发送失败，请稍后重试')
     } finally {
       loading.value = false
     }

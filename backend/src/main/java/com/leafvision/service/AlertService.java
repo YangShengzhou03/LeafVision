@@ -91,7 +91,7 @@ public class AlertService {
         existing.setName(rule.getName());
         existing.setExpr(rule.getExpr());
         existing.setDuration(rule.getDuration());
-        existing.setLevel(rule.getLevel());
+        existing.setSeverity(rule.getSeverity());
         existing.setSummary(rule.getSummary());
         existing.setDescription(rule.getDescription());
         existing.setUpdatedAt(LocalDateTime.now());
@@ -163,8 +163,8 @@ public class AlertService {
         
         if (labels != null) {
             alert.setName(labels.getString("alertname"));
-            alert.setLevel(labels.getString("severity"));
-            alert.setServer(labels.getString("instance"));
+            alert.setSeverity(labels.getString("severity"));
+            alert.setInstance(labels.getString("instance"));
             
             Map<String, String> labelMap = new HashMap<>();
             for (String key : labels.keySet()) {
@@ -262,13 +262,13 @@ public class AlertService {
         
         rule.setExpr(ruleJson.getString("query"));
         rule.setDuration(ruleJson.getString("duration"));
-        rule.setLevel(ruleJson.getString("severity"));
+        rule.setSeverity(ruleJson.getString("severity"));
         rule.setSource("prometheus");
         rule.setUpdatedAt(LocalDateTime.now());
         
         JSONObject labels = ruleJson.getJSONObject("labels");
         if (labels != null) {
-            rule.setLevel(labels.getString("severity"));
+            rule.setSeverity(labels.getString("severity"));
         }
         
         JSONObject annotations = ruleJson.getJSONObject("annotations");
@@ -322,8 +322,8 @@ public class AlertService {
         
         if (labels != null) {
             alert.setName(labels.getString("alertname"));
-            alert.setLevel(labels.getString("severity"));
-            alert.setServer(labels.getString("instance"));
+            alert.setSeverity(labels.getString("severity"));
+            alert.setInstance(labels.getString("instance"));
             
             Map<String, String> labelMap = new HashMap<>();
             for (String key : labels.keySet()) {

@@ -40,6 +40,11 @@ const getSeverityClass = (severity) => {
   return 'info'
 }
 
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return '-'
+  return dateStr.replace('T', ' ').substring(0, 19)
+}
+
 onMounted(() => fetchData())
 </script>
 
@@ -115,7 +120,7 @@ onMounted(() => fetchData())
                 </span>
               </td>
               <td>{{ alert.instance }}</td>
-              <td>{{ alert.firedAt }}</td>
+              <td>{{ formatDateTime(alert.firedAt) }}</td>
               <td>{{ alert.duration }}</td>
               <td>
                 <button class="btn-link">详情</button>

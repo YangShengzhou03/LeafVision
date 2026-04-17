@@ -2,45 +2,55 @@ version: '3.8'
 
 services:
   mysql:
-    image: mysql:8.0
+    image: mariadb:10.11
     container_name: leafvision-mysql
     restart: always
-    networks:
-      - leafvision-network
     environment:
       MYSQL_ROOT_PASSWORD: 123456
-      MYSQL_DATABASE: leaf_boss
+      MYSQL_DATABASE: leaf_vision
+    ports:
+      - "3306:3306"
+    networks:
+      - leafvision-network
     volumes:
+      - ./data.sql:/docker-entrypoint-initdb.d/data.sql
       - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
     image: yangshengzhou/leafvision:backend-v1
     container_name: leafvision-backend
     restart: always
-    networks:
-      - leafvision-network
-    depends_on:
-      - mysql
     ports:
       - "8081:8081"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/leaf_boss?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/leaf_vision
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: 123456
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - leafvision-network
 
   frontend:
     image: yangshengzhou/leafvision:frontend-v1
     container_name: leafvision-frontend
     restart: always
-    networks:
-      - leafvision-network
-    depends_on:
-      - backend
     ports:
       - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - leafvision-network
 
 networks:
   leafvision-network:
+    driver: bridge
 
 volumes:
   mysql-data:

@@ -2,7 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { Refresh, Plus, Search } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getUserList, createUser, updateUser, deleteUser } from '@/api'
+import { getUserList, createUser, updateUser, deleteUser, getRoles } from '@/api'
 
 const loading = ref(false)
 const userList = ref([])
@@ -11,22 +11,35 @@ const showModal = ref(false)
 const modalTitle = ref('添加用户')
 const formData = ref({
   id: null,
-  email: '',
+  username: '',
+  password: '',
   name: '',
-  role: 'viewer',
-  status: 'active'
+  email: '',
+  phone: '',
+  roleId: null,
+  status: 1
 })
 
-const roleOptions = [
-  { label: '系统管理员', value: 'ADMIN' },
-  { label: '运维人员', value: 'OPERATOR' },
-  { label: '访客', value: 'VIEWER' }
-]
+const roleOptions = ref([])
 
 const statusOptions = [
-  { label: '启用', value: 'active' },
-  { label: '禁用', value: 'inactive' }
+  { label: '启用', value: 1 },
+  { label: '禁用', value: 0 }
 ]
+
+const fetchRoles = async () => {
+  try {
+    const res = await getRoles()
+    if (res.code === 200) {
+      roleOptions.value = (res.data || []).map(r => ({
+        label: r.roleName,
+        value: r.id
+      }))
+    }
+  } catch (error) {
+    console.error(error)
+  }
+}
 
 const fetchUserList = async () => {
   loading.value = true
@@ -58,7 +71,7 @@ const applySearch = () => {
 
 const handleAdd = () => {
   modalTitle.value = '添加用户'
-  formData.value = { id: null, email: '', name: '', role: 'viewer', status: 'active' }
+  formData.value = { id: null, username: '', password: '', name: '', email: '', phone: '', roleId: roleOptions.value[0]?.value || null, status: 1 }
   showModal.value = true
 }
 
@@ -102,20 +115,26 @@ const handleSubmit = async () => {
   }
 }
 
-const getRoleText = (role) => {
-  const item = roleOptions.find(r => r.value === role)
-  return item ? item.label : role
+const getRoleText = (roleId) => {
+  const item = roleOptions.value.find(r => r.value === roleId)
+  return item ? item.label : '-'
 }
 
 const getStatusClass = (status) => {
-  return status === 'active' ? 'active' : 'inactive'
+  return status === 1 ? 'active' : 'inactive'
 }
 
 const getStatusText = (status) => {
-  return status === 'active' ? '启用' : '禁用'
+  return status === 1 ? '启用' : '禁用'
+}
+
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return '-'
+  return dateStr.replace('T', ' ').substring(0, 19)
 }
 
 onMounted(async () => {
+  await fetchRoles()
   await fetchUserList()
   applySearch()
 })
@@ -173,15 +192,15 @@ onMounted(async () => {
             </td>
             <td>{{ user.email }}</td>
             <td>
-              <span class="role-badge">{{ getRoleText(user.role) }}</span>
+              <span class="role-badge">{{ getRoleText(user.roleId) }}</span>
             </td>
             <td>
               <span :class="['status-badge', getStatusClass(user.status)]">
                 {{ getStatusText(user.status) }}
               </span>
             </td>
-            <td>{{ user.createdAt }}</td>
-            <td>{{ user.lastLogin || '-' }}</td>
+            <td>{{ formatDateTime(user.createdAt) }}</td>
+            <td>{{ formatDateTime(user.lastLogin) }}</td>
             <td>
               <div class="action-btns">
                 <button class="btn-link" @click="handleEdit(user)">编辑</button>
@@ -206,8 +225,16 @@ onMounted(async () => {
         </div>
         <div class="modal-body">
           <div class="form-group">
-            <label class="form-label">用户名</label>
-            <input v-model="formData.name" type="text" class="form-input" placeholder="输入用户名" />
+            <label class="form-label">登录账号</label>
+            <input v-model="formData.username" type="text" class="form-input" placeholder="输入登录账号" />
+          </div>
+          <div v-if="!formData.id" class="form-group">
+            <label class="form-label">密码</label>
+            <input v-model="formData.password" type="password" class="form-input" placeholder="输入密码" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">姓名</label>
+            <input v-model="formData.name" type="text" class="form-input" placeholder="输入姓名" />
           </div>
           <div class="form-group">
             <label class="form-label">邮箱</label>
@@ -215,7 +242,7 @@ onMounted(async () => {
           </div>
           <div class="form-group">
             <label class="form-label">角色</label>
-            <select v-model="formData.role" class="form-select">
+            <select v-model="formData.roleId" class="form-select">
               <option v-for="item in roleOptions" :key="item.value" :value="item.value">
                 {{ item.label }}
               </option>

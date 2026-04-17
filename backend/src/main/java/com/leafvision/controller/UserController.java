@@ -2,15 +2,11 @@ package com.leafvision.controller;
 
 import com.leafvision.entity.Result;
 import com.leafvision.entity.User;
-import com.leafvision.entity.AuditLog;
 import com.leafvision.service.UserService;
 import com.leafvision.service.AuditLogService;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/users")
@@ -40,7 +36,7 @@ public class UserController {
     }
 
     @PostMapping
-    public Result<User> createUser(@RequestBody User user, HttpServletRequest request) {
+    public Result<User> createUser(@RequestBody User user) {
         try {
             User created = userService.createUser(user);
             auditLogService.logSuccess(null, "admin", "CREATE", "user", user.getUsername());
@@ -51,7 +47,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public Result<User> updateUser(@PathVariable Long id, @RequestBody User user, HttpServletRequest request) {
+    public Result<User> updateUser(@PathVariable Long id, @RequestBody User user) {
         try {
             user.setId(id);
             User updated = userService.updateUser(user);
@@ -63,7 +59,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    public Result<Void> deleteUser(@PathVariable Long id, HttpServletRequest request) {
+    public Result<Void> deleteUser(@PathVariable Long id) {
         User user = userService.getUserById(id);
         if (user == null) {
             return Result.error(404, "用户不存在");

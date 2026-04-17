@@ -56,6 +56,11 @@ const getStatusClass = (status) => {
   return ''
 }
 
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return '-'
+  return dateStr.replace('T', ' ').substring(0, 19)
+}
+
 onMounted(() => handleSearch())
 </script>
 
@@ -148,7 +153,7 @@ onMounted(() => handleSearch())
                   {{ trace.status === 'ok' ? '成功' : '失败' }}
                 </span>
               </td>
-              <td>{{ trace.startTime }}</td>
+              <td>{{ formatDateTime(trace.startTime) }}</td>
               <td>
                 <button class="btn-link" @click="handleViewDetail(trace)">详情</button>
               </td>

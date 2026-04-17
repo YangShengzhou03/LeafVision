@@ -29,30 +29,6 @@ const routes = [
     meta: { public: true }
   },
   {
-    path: '/about',
-    name: 'About',
-    component: () => import('@/views/About.vue'),
-    meta: { public: true }
-  },
-  {
-    path: '/docs',
-    name: 'Docs',
-    component: () => import('@/views/Docs.vue'),
-    meta: { public: true }
-  },
-  {
-    path: '/privacy',
-    name: 'Privacy',
-    component: () => import('@/views/Privacy.vue'),
-    meta: { public: true }
-  },
-  {
-    path: '/terms',
-    name: 'Terms',
-    component: () => import('@/views/Terms.vue'),
-    meta: { public: true }
-  },
-  {
     path: '/monitor',
     component: MainLayout,
     meta: { requiresAuth: true },
@@ -75,6 +51,12 @@ const routes = [
         name: 'Servers',
         component: () => import('@/views/Servers.vue'),
         meta: { permission: PERMISSION_CODE.SERVERS }
+      },
+      {
+        path: 'server-groups',
+        name: 'ServerGroups',
+        component: () => import('@/views/ServerGroups.vue'),
+        meta: { permission: PERMISSION_CODE.SERVER_GROUPS }
       },
       {
         path: 'containers',

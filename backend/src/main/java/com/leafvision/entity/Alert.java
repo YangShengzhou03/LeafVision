@@ -16,8 +16,8 @@ public class Alert {
     
     private String fingerprint;
     private String name;
-    private String level;
-    private String server;
+    private String severity;
+    private String instance;
     private String value;
     private String summary;
     private String description;
@@ -27,6 +27,8 @@ public class Alert {
     private String status;
     private String source;
     private Long serverId;
+    private String firedAt;
+    private String duration;
     
     @TableField(exist = false)
     private Map<String, String> labels;
@@ -58,20 +60,20 @@ public class Alert {
         this.name = name;
     }
 
-    public String getLevel() {
-        return level;
+    public String getSeverity() {
+        return severity;
     }
 
-    public void setLevel(String level) {
-        this.level = level;
+    public void setSeverity(String severity) {
+        this.severity = severity;
     }
 
-    public String getServer() {
-        return server;
+    public String getInstance() {
+        return instance;
     }
 
-    public void setServer(String server) {
-        this.server = server;
+    public void setInstance(String instance) {
+        this.instance = instance;
     }
 
     public String getValue() {
@@ -144,6 +146,22 @@ public class Alert {
 
     public void setServerId(Long serverId) {
         this.serverId = serverId;
+    }
+
+    public String getFiredAt() {
+        return firedAt;
+    }
+
+    public void setFiredAt(String firedAt) {
+        this.firedAt = firedAt;
+    }
+
+    public String getDuration() {
+        return duration;
+    }
+
+    public void setDuration(String duration) {
+        this.duration = duration;
     }
 
     public Map<String, String> getLabels() {

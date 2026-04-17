@@ -1,10 +1,14 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { onMounted, ref, computed } from 'vue'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
+const userStore = useUserStore()
 const mobileMenuOpen = ref(false)
 const currentYear = computed(() => new Date().getFullYear())
+
+const isLoggedIn = computed(() => userStore.isLoggedIn)
 
 const features = [
   { title: '实时监控', desc: '毫秒级数据采集，全栈基础设施状态尽在掌控' },
@@ -22,6 +26,7 @@ const stats = [
 
 const handleLogin = () => router.push('/login')
 const handleRegister = () => router.push('/register')
+const handleGoToConsole = () => router.push('/monitor/dashboard')
 const toggleMobileMenu = () => { mobileMenuOpen.value = !mobileMenuOpen.value }
 
 onMounted(() => {
@@ -50,8 +55,13 @@ onMounted(() => {
           <a href="#contact" @click="mobileMenuOpen = false">联系</a>
         </nav>
         <div class="actions">
-          <button class="btn-ghost" @click="handleLogin">登录</button>
-          <button class="btn-primary" @click="handleRegister">开始使用</button>
+          <template v-if="isLoggedIn">
+            <button class="btn-primary" @click="handleGoToConsole">进入控制台</button>
+          </template>
+          <template v-else>
+            <button class="btn-ghost" @click="handleLogin">登录</button>
+            <button class="btn-primary" @click="handleRegister">开始使用</button>
+          </template>
         </div>
         <button class="mobile-toggle" @click="toggleMobileMenu">
           <span></span>
@@ -68,12 +78,19 @@ onMounted(() => {
         <h1>精准洞察<br/>全域感知</h1>
         <p class="subtitle">以工程精度重新定义基础设施可观测性——从指标、日志到链路，构建统一感知体系</p>
         <div class="hero-actions">
-          <button class="btn-hero-primary" @click="handleRegister">
-            立即开始
-          </button>
-          <button class="btn-hero-ghost" @click="handleLogin">
-            登录控制台
-          </button>
+          <template v-if="isLoggedIn">
+            <button class="btn-hero-primary" @click="handleGoToConsole">
+              进入控制台
+            </button>
+          </template>
+          <template v-else>
+            <button class="btn-hero-primary" @click="handleRegister">
+              立即开始
+            </button>
+            <button class="btn-hero-ghost" @click="handleLogin">
+              登录控制台
+            </button>
+          </template>
         </div>
       </div>
     </section>
@@ -107,8 +124,8 @@ onMounted(() => {
         <span class="contact-tag">GET STARTED</span>
         <h2>即刻启程</h2>
         <p>注册即可免费体验，让基础设施可观测性不再妥协</p>
-        <button class="btn-hero-primary" @click="handleRegister">
-          免费试用
+        <button class="btn-hero-primary" @click="isLoggedIn ? handleGoToConsole() : handleRegister()">
+          {{ isLoggedIn ? '进入控制台' : '免费试用' }}
         </button>
       </div>
     </section>
@@ -117,12 +134,6 @@ onMounted(() => {
       <div class="footer-inner">
         <div class="footer-brand">
           <span>LEAFVISION</span>
-        </div>
-        <div class="footer-links">
-          <router-link to="/about">关于</router-link>
-          <router-link to="/docs">文档</router-link>
-          <router-link to="/privacy">隐私</router-link>
-          <router-link to="/terms">条款</router-link>
         </div>
         <div class="footer-copyright">© {{ currentYear }} LeafVision. All rights reserved.</div>
       </div>
@@ -189,6 +200,7 @@ onMounted(() => {
 .actions {
   display: flex;
   gap: 16px;
+  align-items: center;
 }
 
 .btn-ghost {
@@ -246,7 +258,7 @@ onMounted(() => {
   background: var(--color-surface-dark);
   display: flex;
   align-items: center;
-  padding: 100px 32px 80px;
+  padding: 100px 180px 80px;
   overflow: hidden;
 }
 
@@ -577,7 +589,12 @@ onMounted(() => {
     gap: 20px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   }
-  .actions { display: none; }
+  .actions { 
+    display: flex; 
+    gap: 8px;
+  }
+  .actions .btn-ghost { padding: 6px 12px; font-size: 12px; }
+  .actions .btn-primary { padding: 6px 12px; font-size: 12px; }
   .mobile-toggle { display: flex; }
   .hero h1 { font-size: 36px; }
   .subtitle { font-size: 14px; }

@@ -134,7 +134,7 @@ onMounted(() => fetchRoles())
               :class="['role-item', { active: selectedRole?.id === role.id }]"
               @click="handleRoleSelect(role)"
             >
-              <span class="role-name">{{ role.name }}</span>
+              <span class="role-name">{{ role.roleName }}</span>
               <span class="role-desc">{{ role.description }}</span>
             </div>
           </div>
@@ -144,7 +144,7 @@ onMounted(() => fetchRoles())
       <div class="permissions-card">
         <div class="card-header">
           <span class="card-title">权限设置</span>
-          <span v-if="selectedRole" class="selected-role">当前角色: {{ selectedRole.name }}</span>
+          <span v-if="selectedRole" class="selected-role">当前角色: {{ selectedRole.roleName }}</span>
         </div>
         <div class="card-body">
           <div v-if="selectedRole" class="permission-tree">

@@ -17,12 +17,18 @@ public interface UserMapper {
     @Select("SELECT u.*, r.role_code, r.role_name FROM user u LEFT JOIN role r ON u.role_id = r.id WHERE u.username = #{username}")
     User findByUsername(@Param("username") String username);
     
+    @Select("SELECT u.*, r.role_code, r.role_name FROM user u LEFT JOIN role r ON u.role_id = r.id WHERE u.email = #{email}")
+    User findByEmail(@Param("email") String email);
+    
     @Insert("INSERT INTO user (username, password, name, email, phone, role_id, status) VALUES (#{username}, #{password}, #{name}, #{email}, #{phone}, #{roleId}, #{status})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(User user);
     
     @Update("UPDATE user SET username = #{username}, name = #{name}, email = #{email}, phone = #{phone}, role_id = #{roleId}, status = #{status} WHERE id = #{id}")
     int update(User user);
+    
+    @Update("UPDATE user SET password = #{password} WHERE id = #{id}")
+    int updatePassword(@Param("id") Long id, @Param("password") String password);
     
     @Delete("DELETE FROM user WHERE id = #{id}")
     int delete(@Param("id") Long id);

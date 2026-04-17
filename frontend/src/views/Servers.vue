@@ -9,7 +9,7 @@ const loading = ref(false)
 const dialogVisible = ref(false)
 const serverList = ref([])
 
-const formData = ref({ name: '', ip: '', port: 22, type: 'linux' })
+const formData = ref({ name: '', ip: '', port: 9090, type: 'prometheus-master' })
 
 const fetchServerList = async () => {
   loading.value = true
@@ -24,7 +24,7 @@ const fetchServerList = async () => {
 }
 
 const handleAdd = () => {
-  formData.value = { name: '', ip: '', port: 22, type: 'linux' }
+  formData.value = { name: '', ip: '', port: 9090, type: 'prometheus-master' }
   dialogVisible.value = true
 }
 
@@ -199,14 +199,14 @@ onMounted(() => fetchServerList())
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px;
+  padding: 16px 20px;
   background: #ffffff;
   border: 1px solid var(--color-border);
 }
 
 .page-title {
-  font-size: 18px;
-  font-weight: 900;
+  font-size: 14px;
+  font-weight: 700;
   color: var(--color-text-primary);
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -226,7 +226,7 @@ onMounted(() => fetchServerList())
   color: #ffffff;
   font-size: 13px;
   font-weight: 700;
-  padding: 10px 20px;
+  padding: 8px 16px;
   cursor: pointer;
   transition: background 0.15s ease;
   letter-spacing: 0.05em;
@@ -246,7 +246,7 @@ onMounted(() => fetchServerList())
   color: var(--color-text-secondary);
   font-size: 13px;
   font-weight: 700;
-  padding: 10px 20px;
+  padding: 8px 16px;
   cursor: pointer;
   transition: all 0.15s ease;
   letter-spacing: 0.05em;

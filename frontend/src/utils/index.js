@@ -2,6 +2,11 @@ export * from './storage'
 
 export const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
+export const formatDateTime = (dateStr) => {
+  if (!dateStr) return '-'
+  return dateStr.replace('T', ' ').substring(0, 19)
+}
+
 export const generateTimeLabels = (count, interval = 5) => {
   const labels = []
   const now = new Date()

@@ -2,6 +2,8 @@ import request from '../request'
 
 export const getServerList = () => request.get('/servers')
 
+export const getServers = () => request.get('/servers')
+
 export const createServer = (data) => request.post('/servers', data)
 
 export const updateServer = (id, data) => request.put(`/servers/${id}`, data)
