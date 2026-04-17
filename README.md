@@ -243,7 +243,7 @@ leaf-vision/
 │   │   ├── main.js
 │   │   └── style.css
 │   ├── Dockerfile
-│   ├── nginx.conf
+│   ├── leaf-vision.conf
 │   ├── package.json
 │   └── vite.config.js
 │

@@ -1,27 +1,26 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { Plus, Edit, Delete, Refresh, View } from '@element-plus/icons-vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus, Refresh } from '@element-plus/icons-vue'
 import { api } from '@/api'
+import { ElMessage } from 'element-plus'
 
-const serverList = ref([])
 const loading = ref(false)
-
 const dialogVisible = ref(false)
-const dialogTitle = ref('添加服务器')
-const serverForm = ref({
-  id: null,
-  name: '',
-  ip: '',
-  port: 9090,
-  type: 'prometheus-node'
-})
+const serverList = ref([])
 
 const serverTypes = [
-  { label: 'Prometheus 主节点', value: 'prometheus-master' },
-  { label: 'Prometheus 节点', value: 'prometheus-node' },
-  { label: 'Alertmanager', value: 'alertmanager' }
+  { value: 'linux', label: 'Linux' },
+  { value: 'windows', label: 'Windows' },
+  { value: 'docker', label: 'Docker' }
 ]
+
+const formRef = ref(null)
+const formData = ref({ name: '', ip: '', port: 22, type: 'linux', tags: [] })
+
+const rules = {
+  name: [{ required: true, message: '请输入服务器名称', trigger: 'blur' }],
+  ip: [{ required: true, message: '请输入IP地址', trigger: 'blur' }]
+}
 
 const fetchServerList = async () => {
   loading.value = true
@@ -31,198 +30,126 @@ const fetchServerList = async () => {
       serverList.value = res.data || []
     }
   } catch (error) {
-    console.error('获取服务器列表失败:', error)
+    console.error(error)
   } finally {
     loading.value = false
   }
 }
 
 const handleAdd = () => {
-  dialogTitle.value = '添加服务器'
-  serverForm.value = { id: null, name: '', ip: '', port: 9090, type: 'prometheus-node' }
+  formData.value = { name: '', ip: '', port: 22, type: 'linux', tags: [] }
   dialogVisible.value = true
 }
 
 const handleEdit = (row) => {
-  dialogTitle.value = '编辑服务器'
-  serverForm.value = { ...row }
+  formData.value = { ...row }
   dialogVisible.value = true
 }
 
 const handleDelete = async (row) => {
   try {
-    await ElMessageBox.confirm(`确定要删除服务器 "${row.name}" 吗？`, '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
     const res = await api.deleteServer(row.id)
     if (res.code === 200) {
       ElMessage.success('删除成功')
       fetchServerList()
-    } else {
-      ElMessage.error(res.message || '删除失败')
     }
   } catch (error) {
-    if (error !== 'cancel') {
-      console.error('删除服务器失败:', error)
-    }
+    console.error(error)
   }
-}
-
-const handleRefresh = async () => {
-  try {
-    const res = await api.refreshStatus()
-    if (res.code === 200) {
-      ElMessage.success('服务器状态已刷新')
-      fetchServerList()
-    }
-  } catch (error) {
-    console.error('刷新状态失败:', error)
-  }
-}
-
-const handleView = (row) => {
-  ElMessageBox.alert(
-    `<p><strong>名称:</strong> ${row.name}</p>
-     <p><strong>IP:</strong> ${row.ip}</p>
-     <p><strong>端口:</strong> ${row.port}</p>
-     <p><strong>类型:</strong> ${serverTypes.find(t => t.value === row.type)?.label || row.type}</p>
-     <p><strong>状态:</strong> ${row.status === 'online' ? '在线' : '离线'}</p>
-     <p><strong>版本:</strong> ${row.version || '-'}</p>
-     <p><strong>运行时间:</strong> ${row.uptime || '-'}</p>
-     <p><strong>CPU使用率:</strong> ${row.cpuUsage ? row.cpuUsage.toFixed(1) + '%' : '-'}</p>
-     <p><strong>内存使用率:</strong> ${row.memoryUsage ? row.memoryUsage.toFixed(1) + '%' : '-'}</p>`,
-    '服务器详情',
-    {
-      dangerouslyUseHTMLString: true,
-      confirmButtonText: '确定'
-    }
-  )
 }
 
 const handleSubmit = async () => {
-  if (!serverForm.value.name || !serverForm.value.ip) {
-    ElMessage.warning('请填写完整信息')
-    return
-  }
-
-  try {
-    let res
-    if (serverForm.value.id) {
-      res = await api.updateServer(serverForm.value.id, serverForm.value)
-      if (res.code === 200) {
+  if (!formRef.value) return
+  await formRef.value.validate(async (valid) => {
+    if (!valid) return
+    try {
+      if (formData.value.id) {
+        await api.updateServer(formData.value.id, formData.value)
         ElMessage.success('更新成功')
       } else {
-        ElMessage.error(res.message || '更新失败')
-        return
-      }
-    } else {
-      res = await api.addServer(serverForm.value)
-      if (res.code === 200) {
+        await api.createServer(formData.value)
         ElMessage.success('添加成功')
-      } else {
-        ElMessage.error(res.message || '添加失败')
-        return
       }
+      dialogVisible.value = false
+      fetchServerList()
+    } catch (error) {
+      console.error(error)
     }
-    dialogVisible.value = false
-    fetchServerList()
-  } catch (error) {
-    console.error('保存服务器失败:', error)
-  }
+  })
 }
 
-onMounted(() => {
+const handleRefresh = () => {
   fetchServerList()
-})
+  ElMessage.success('刷新完成')
+}
+
+const getTypeLabel = (type) => serverTypes.find(t => t.value === type)?.label || type
+
+onMounted(() => fetchServerList())
 </script>
 
 <template>
-  <div class="servers-page">
-    <el-card>
-      <template #header>
-        <div class="card-header">
-          <span>服务器管理</span>
-          <div class="header-actions">
-            <el-button type="primary" :icon="Plus" @click="handleAdd">添加服务器</el-button>
-            <el-button :icon="Refresh" @click="handleRefresh">刷新状态</el-button>
-          </div>
+  <div class="page-container">
+    <div class="panel-card">
+      <div class="panel-header">
+        <span>服务器列表</span>
+        <div class="header-actions">
+          <el-button size="small" @click="handleRefresh"><el-icon><Refresh /></el-icon> 刷新</el-button>
+          <el-button type="primary" size="small" @click="handleAdd"><el-icon><Plus /></el-icon> 添加</el-button>
         </div>
-      </template>
+      </div>
 
-      <el-table :data="serverList" style="width: 100%" v-loading="loading">
-        <el-table-column prop="name" label="服务器名称" />
-        <el-table-column prop="ip" label="IP 地址" />
-        <el-table-column prop="port" label="端口" width="100" />
-        <el-table-column prop="type" label="类型">
+      <el-table :data="serverList" v-loading="loading" class="dark-table">
+        <el-table-column label="服务器" min-width="180">
           <template #default="{ row }">
-            <el-tag>{{ serverTypes.find(t => t.value === row.type)?.label }}</el-tag>
+            <div class="server-cell">
+              <span class="server-name">{{ row.name }}</span>
+              <span class="server-ip">{{ row.ip }}:{{ row.port }}</span>
+            </div>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column label="类型" width="100" align="center">
+          <template #default="{ row }"><span class="type-tag">{{ getTypeLabel(row.type) }}</span></template>
+        </el-table-column>
+        <el-table-column label="状态" width="100" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'online' ? 'success' : 'danger'" size="small">
-              {{ row.status === 'online' ? '在线' : '离线' }}
-            </el-tag>
+            <span class="status-dot" :class="row.status"></span>
+            {{ row.status === 'online' ? '在线' : '离线' }}
           </template>
         </el-table-column>
-        <el-table-column prop="version" label="版本" width="100">
+        <el-table-column label="CPU使用率" width="160">
           <template #default="{ row }">
-            {{ row.version || '-' }}
+            <div class="progress-wrapper">
+              <div class="progress-bar" :style="{ width: (row.cpuUsage || 0) + '%' }"></div>
+              <span>{{ row.cpuUsage || 0 }}%</span>
+            </div>
           </template>
         </el-table-column>
-        <el-table-column prop="cpuUsage" label="CPU" width="120">
+        <el-table-column label="内存使用率" width="160">
           <template #default="{ row }">
-            <el-progress 
-              v-if="row.cpuUsage" 
-              :percentage="Math.round(row.cpuUsage)" 
-              :color="row.cpuUsage > 80 ? '#F56C6C' : '#409EFF'" 
-            />
-            <span v-else>-</span>
+            <div class="progress-wrapper">
+              <div class="progress-bar mem" :style="{ width: (row.memoryUsage || 0) + '%' }"></div>
+              <span>{{ row.memoryUsage || 0 }}%</span>
+            </div>
           </template>
         </el-table-column>
-        <el-table-column prop="memoryUsage" label="内存" width="120">
+        <el-table-column prop="version" label="版本" width="80" align="center" />
+        <el-table-column prop="uptime" label="运行时间" width="100" align="center" />
+        <el-table-column label="操作" width="140" align="center" fixed="right">
           <template #default="{ row }">
-            <el-progress 
-              v-if="row.memoryUsage" 
-              :percentage="Math.round(row.memoryUsage)" 
-              :color="row.memoryUsage > 80 ? '#F56C6C' : '#67C23A'" 
-            />
-            <span v-else>-</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="180">
-          <template #default="{ row }">
-            <el-button type="primary" link :icon="View" @click="handleView(row)">详情</el-button>
-            <el-button type="primary" link :icon="Edit" @click="handleEdit(row)">编辑</el-button>
-            <el-button type="danger" link :icon="Delete" @click="handleDelete(row)">删除</el-button>
+            <el-button type="primary" link size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button type="danger" link size="small" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
-    </el-card>
+    </div>
 
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px">
-      <el-form :model="serverForm" label-width="100px">
-        <el-form-item label="服务器名称" required>
-          <el-input v-model="serverForm.name" placeholder="请输入服务器名称" />
-        </el-form-item>
-        <el-form-item label="IP 地址" required>
-          <el-input v-model="serverForm.ip" placeholder="请输入 IP 地址，如 192.168.1.100" />
-        </el-form-item>
-        <el-form-item label="端口" required>
-          <el-input-number v-model="serverForm.port" :min="1" :max="65535" style="width: 100%" />
-        </el-form-item>
-        <el-form-item label="服务器类型" required>
-          <el-select v-model="serverForm.type" style="width: 100%">
-            <el-option
-              v-for="item in serverTypes"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
-          </el-select>
-        </el-form-item>
+    <el-dialog v-model="dialogVisible" :title="formData.id ? '编辑服务器' : '添加服务器'" width="480px" class="dark-dialog">
+      <el-form :model="formData" :rules="rules" ref="formRef" label-width="90px" label-position="right">
+        <el-form-item label="名称" prop="name"><el-input v-model="formData.name" placeholder="输入服务器名称" /></el-form-item>
+        <el-form-item label="IP地址" prop="ip"><el-input v-model="formData.ip" placeholder="输入IP地址" /></el-form-item>
+        <el-form-item label="端口" prop="port"><el-input-number v-model="formData.port" :min="1" :max="65535" style="width: 100%" /></el-form-item>
+        <el-form-item label="类型" prop="type"><el-select v-model="formData.type" placeholder="选择类型" style="width: 100%"><el-option v-for="item in serverTypes" :key="item.value" :label="item.label" :value="item.value" /></el-select></el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -233,18 +160,59 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.servers-page {
-  padding: 0;
+.page-container { display: flex; flex-direction: column; gap: 16px; }
+
+.panel-card {
+  background: #1e1e1e;
+  border: 1px solid #2a2a2a;
+  border-radius: 3px;
+  padding: 16px;
 }
 
-.card-header {
+.panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: #ccc;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #2a2a2a;
 }
 
-.header-actions {
-  display: flex;
-  gap: 10px;
+.header-actions { display: flex; gap: 8px; }
+
+.server-cell { display: flex; flex-direction: column; gap: 2px; }
+.server-name { font-weight: 500; color: #ddd; }
+.server-ip { font-size: 12px; color: #666; }
+
+.type-tag {
+  background: rgba(99, 102, 241, 0.2);
+  color: #818cf8;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
 }
+
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+.status-dot.online { background: #22c55e; box-shadow: 0 0 6px rgba(34, 197, 94, 0.5); }
+.status-dot.offline { background: #ef4444; box-shadow: 0 0 6px rgba(239, 68, 68, 0.5); }
+
+.progress-wrapper { display: flex; align-items: center; gap: 10px; padding: 0 4px; }
+.progress-bar {
+  height: 5px;
+  border-radius: 3px;
+  transition: all 0.3s;
+  flex: 1;
+  background-color: #6366f1;
+}
+.progress-bar.mem { background-color: #22c55e; }
+.progress-wrapper span { color: #999; font-size: 12px; min-width: 32px; text-align: right; }
 </style>
