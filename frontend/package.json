@@ -2,6 +2,14 @@
   "name": "leaf-vision-frontend",
   "private": true,
   "version": "0.1.0",
+  "author": {
+    "name": "LeafVision Team",
+    "email": "YangSZ03@foxmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://gitee.com/Yangshengzhou/leaf-vision.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,6 +18,7 @@
   },
   "dependencies": {
     "vue": "^3.5.32",
+    "pinia": "^2.1.7",
     "element-plus": "^2.4.4",
     "@element-plus/icons-vue": "^2.3.1",
     "axios": "^1.6.2",

@@ -164,19 +164,22 @@ LeafVision 调用 Alertmanager 的 HTTP API：
 | 技术 | 版本 | 说明 |
 |------|------|------|
 | Java | 17 | 编程语言 |
-| Spring Boot | 3.1.x | Web 框架 |
-| MyBatis Plus | 3.5.x | ORM 框架 |
-| Spring WebFlux | - | HTTP 客户端 |
-| H2 Database | - | 嵌入式数据库 |
+| Spring Boot | 3.1.6 | Web 框架 |
+| MyBatis Plus | 3.5.5 | ORM 框架 |
+| Spring WebFlux | 3.1.6 | HTTP 客户端 |
+| H2 Database | 2.x | 嵌入式数据库 |
 
 ### 3.2 前端
 
 | 技术 | 版本 | 说明 |
 |------|------|------|
-| Vue | 3.x | 前端框架 |
-| Element Plus | - | UI 组件库 |
-| ECharts | - | 图表库 |
-| Vite | - | 构建工具 |
+| Vue | 3.5.x | 前端框架 |
+| Element Plus | 2.4.x | UI 组件库 |
+| ECharts | 5.4.x | 图表库 |
+| Pinia | 2.1.x | 状态管理 |
+| Vue Router | 4.2.x | 路由管理 |
+| Axios | 1.6.x | HTTP 客户端 |
+| Vite | 8.0.x | 构建工具 |
 
 ---
 
@@ -229,20 +232,54 @@ leaf-vision/
 │   └── pom.xml
 │
 ├── frontend/                         # 前端项目
+│   ├── public/                       # 静态资源
+│   │   └── favicon.svg
 │   ├── src/
 │   │   ├── api/                      # API 请求
+│   │   │   ├── modules/              # API 模块
+│   │   │   │   ├── alert.js
+│   │   │   │   ├── dashboard.js
+│   │   │   │   ├── metrics.js
+│   │   │   │   └── server.js
+│   │   │   ├── index.js
+│   │   │   └── request.js
+│   │   ├── constants/                # 常量定义
 │   │   │   └── index.js
+│   │   ├── layout/                   # 布局组件
+│   │   │   └── MainLayout.vue
 │   │   ├── router/                   # 路由配置
 │   │   │   └── index.js
+│   │   ├── stores/                   # 状态管理
+│   │   │   └── user.js
+│   │   ├── utils/                    # 工具函数
+│   │   │   ├── index.js
+│   │   │   └── storage.js
 │   │   ├── views/                    # 页面组件
+│   │   │   ├── About.vue
 │   │   │   ├── Alerts.vue
+│   │   │   ├── Containers.vue
 │   │   │   ├── Dashboard.vue
+│   │   │   ├── Docs.vue
+│   │   │   ├── ForgotPassword.vue
+│   │   │   ├── Landing.vue
+│   │   │   ├── Login.vue
+│   │   │   ├── Logs.vue
 │   │   │   ├── Metrics.vue
-│   │   │   └── Servers.vue
+│   │   │   ├── Permissions.vue
+│   │   │   ├── Privacy.vue
+│   │   │   ├── Realtime.vue
+│   │   │   ├── Register.vue
+│   │   │   ├── Servers.vue
+│   │   │   ├── Services.vue
+│   │   │   ├── Settings.vue
+│   │   │   ├── Terms.vue
+│   │   │   ├── Traces.vue
+│   │   │   └── Users.vue
 │   │   ├── App.vue
-│   │   ├── main.js
-│   │   └── style.css
+│   │   └── main.js
+│   ├── .gitignore
 │   ├── Dockerfile
+│   ├── index.html
 │   ├── leaf-vision.conf
 │   ├── package.json
 │   └── vite.config.js
@@ -272,7 +309,7 @@ leaf-vision/
 
 ```bash
 # 1. 克隆项目
-git clone <repository-url>
+git clone https://gitee.com/Yangshengzhou/leaf-vision.git
 cd leaf-vision
 
 # 2. 启动所有服务
@@ -517,6 +554,16 @@ LeafVision 使用 H2 嵌入式数据库存储：
 
 ---
 
-## 十一、许可证
+## 十一、作者信息
+
+**开发者**: LeafVision Team  
+**电子邮件**: YangSZ03@foxmail.com  
+**所属机构**: 江西科技师范大学
+
+如有问题或建议，欢迎通过邮件联系。
+
+---
+
+## 十二、许可证
 
 MIT License

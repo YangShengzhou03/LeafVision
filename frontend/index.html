@@ -1,13 +1,63 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LeafVision - 监控系统</title>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
-  </body>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LeafVision - 监控系统</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <div id="app"></div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+<style>
+  :root {
+    --site-context-theme-color: #ffffff;
+    --site-context-highlight-color: #1c69d4;
+    --site-context-focus-color: #0653b6;
+    --site-context-metainfo-color: #757575;
+    --color-text-primary: #262626;
+    --color-text-secondary: #757575;
+    --color-text-muted: #bbbbbb;
+    --color-surface-dark: #0a0a0a;
+    --color-surface-dark-secondary: #141414;
+    --color-border: #e0e0e0;
+    --font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --radius: 0px;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-family);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color: var(--color-text-primary);
+    background: var(--site-context-theme-color);
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button {
+    font-family: var(--font-family);
+  }
+
+  input {
+    font-family: var(--font-family);
+  }
+</style>
+
 </html>

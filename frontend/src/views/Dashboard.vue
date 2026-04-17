@@ -6,8 +6,9 @@ import { LineChart, PieChart, GaugeChart } from 'echarts/charts'
 import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
 import VChart from 'vue-echarts'
 import { Refresh, TrendCharts, Cpu, Monitor, Connection } from '@element-plus/icons-vue'
-import { api } from '@/api'
+import { getDashboardData } from '@/api'
 import { ElMessage } from 'element-plus'
+import { generateTimeLabels, getProgressColor } from '@/utils'
 
 use([CanvasRenderer, LineChart, PieChart, GaugeChart, GridComponent, TooltipComponent, LegendComponent])
 
@@ -16,38 +17,38 @@ const serverList = ref([])
 const loading = ref(false)
 
 const cpuOption = ref({
-  tooltip: { trigger: 'axis', backgroundColor: '#252525', borderColor: '#404040', textStyle: { color: '#ccc' } },
+  tooltip: { trigger: 'axis' },
   grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-  xAxis: { type: 'category', boundaryGap: false, data: [], axisLine: { lineStyle: { color: '#333' } }, axisLabel: { color: '#888' } },
-  yAxis: { type: 'value', max: 100, splitLine: { lineStyle: { color: '#222' } }, axisLabel: { color: '#888' } },
-  series: [{ name: 'CPU使用率', type: 'line', smooth: true, symbol: 'none', areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(99, 102, 241, 0.3)' }, { offset: 1, color: 'rgba(99, 102, 241, 0.02)' }] } }, lineStyle: { color: '#6366f1', width: 1.5 }, data: [] }]
+  xAxis: { type: 'category', boundaryGap: false, data: [] },
+  yAxis: { type: 'value', max: 100 },
+  series: [{ name: 'CPU使用率', type: 'line', smooth: true, symbol: 'none', areaStyle: { opacity: 0.2 }, lineStyle: { width: 2 }, data: [] }]
 })
 
 const memoryOption = ref({
-  tooltip: { trigger: 'axis', backgroundColor: '#252525', borderColor: '#404040', textStyle: { color: '#ccc' } },
+  tooltip: { trigger: 'axis' },
   grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-  xAxis: { type: 'category', boundaryGap: false, data: [], axisLine: { lineStyle: { color: '#333' } }, axisLabel: { color: '#888' } },
-  yAxis: { type: 'value', max: 100, splitLine: { lineStyle: { color: '#222' } }, axisLabel: { color: '#888' } },
-  series: [{ name: '内存使用率', type: 'line', smooth: true, symbol: 'none', areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(34, 197, 94, 0.3)' }, { offset: 1, color: 'rgba(34, 197, 94, 0.02)' }] } }, lineStyle: { color: '#22c55e', width: 1.5 }, data: [] }]
+  xAxis: { type: 'category', boundaryGap: false, data: [] },
+  yAxis: { type: 'value', max: 100 },
+  series: [{ name: '内存使用率', type: 'line', smooth: true, symbol: 'none', areaStyle: { opacity: 0.2 }, lineStyle: { width: 2, color: '#67c23a' }, data: [] }]
 })
 
 const networkOption = ref({
-  tooltip: { trigger: 'item', backgroundColor: '#252525', borderColor: '#404040', textStyle: { color: '#ccc' } },
-  legend: { bottom: '2%', left: 'center', textStyle: { color: '#888' } },
-  series: [{ name: '网络流量', type: 'pie', radius: ['45%', '70%'], avoidLabelOverlap: false, itemStyle: { borderRadius: 4, borderColor: '#1a1a1a', borderWidth: 1 }, label: { show: false }, emphasis: { label: { show: true, fontSize: 13, fontWeight: 'bold', color: '#fff' } }, labelLine: { show: false }, data: [] }]
+  tooltip: { trigger: 'item' },
+  legend: { bottom: '2%', left: 'center' },
+  series: [{ name: '网络流量', type: 'pie', radius: ['45%', '70%'], avoidLabelOverlap: false, itemStyle: { borderRadius: 0 }, label: { show: false }, emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } }, labelLine: { show: false }, data: [] }]
 })
 
 const healthOption = computed(() => ({
   series: [{
     type: 'gauge',
     startAngle: 180, endAngle: 0, min: 0, max: 100, splitNumber: 5,
-    axisLine: { lineStyle: { width: 10, color: [[0.3, '#22c55e'], [0.7, '#f59e0b'], [1, '#ef4444']] } },
+    axisLine: { lineStyle: { width: 10, color: [[0.3, '#67c23a'], [0.7, '#e6a23c'], [1, '#f56c6c']] } },
     pointer: { icon: 'path://M12.8,0.7l12,40.1H0.7L12.8,0.7z', length: '60%', width: 6, offsetCenter: [0, '-10%'], itemStyle: { color: 'auto' } },
     axisTick: { length: 5, lineStyle: { color: 'auto', width: 1 } },
     splitLine: { length: 10, lineStyle: { color: 'auto', width: 1.5 } },
-    axisLabel: { color: '#888', fontSize: 9, distance: -35, formatter: (v) => v + '%' },
-    title: { offsetCenter: [0, '28%'], fontSize: 13, color: '#999' },
-    detail: { fontSize: 22, offsetCenter: [0, '0%'], valueAnimation: true, formatter: (v) => Math.round(v) + '%', color: 'auto' },
+    axisLabel: { fontSize: 10, distance: -35, formatter: (v) => v + '%' },
+    title: { offsetCenter: [0, '28%'], fontSize: 14 },
+    detail: { fontSize: 24, offsetCenter: [0, '0%'], valueAnimation: true, formatter: (v) => Math.round(v) + '%', color: 'auto' },
     data: [{ value: serverList.value.filter(s => s.status === 'online').length / (serverList.value.length || 1) * 100, name: '健康度' }]
   }]
 }))
@@ -55,7 +56,7 @@ const healthOption = computed(() => ({
 const fetchDashboardData = async () => {
   loading.value = true
   try {
-    const res = await api.getDashboardData()
+    const res = await getDashboardData()
     if (res.code === 200 && res.data) {
       const d = res.data
       statsCards.value = d.statsCards || []
@@ -77,19 +78,10 @@ const fetchDashboardData = async () => {
   }
 }
 
-const generateTimeLabels = (count) => {
-  const labels = []
-  const now = new Date()
-  for (let i = count - 1; i >= 0; i--) {
-    const t = new Date(now.getTime() - i * 5 * 60 * 1000)
-    labels.push(t.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }))
-  }
-  return labels
-}
-
-const getProgressColor = (val) => val > 80 ? '#ef4444' : val > 60 ? '#f59e0b' : '#6366f1'
-
 const handleRefresh = () => { fetchDashboardData(); ElMessage.success('数据已刷新') }
+
+const icons = [Monitor, Cpu, Connection, TrendCharts]
+const iconColors = ['#1c69d4', '#67c23a', '#e6a23c', '#f56c6c']
 
 let refreshTimer = null
 
@@ -99,165 +91,354 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
 
 <template>
   <div class="dashboard">
-    <el-row :gutter="16" class="stats-row">
-      <el-col :span="6" v-for="(card, index) in statsCards" :key="card.title">
-        <div class="stat-card" :class="'type-' + (index % 4)">
-          <div class="stat-icon">
-            <el-icon :size="20"><Monitor v-if="index === 0" /><Cpu v-else-if="index === 1" /><Connection v-else-if="index === 2" /><TrendCharts v-else /></el-icon>
-          </div>
-          <div class="stat-info">
-            <div class="stat-value">{{ card.value }}</div>
-            <div class="stat-title">{{ card.title }}</div>
-          </div>
+    <div class="stats-row">
+      <div v-for="(card, i) in statsCards" :key="card.title" class="stat-card">
+        <div class="stat-icon" :style="{ background: iconColors[i % 4] }">
+          <el-icon :size="20"><component :is="icons[i]" /></el-icon>
         </div>
-      </el-col>
-    </el-row>
+        <div class="stat-content">
+          <span class="stat-value">{{ card.value }}</span>
+          <span class="stat-label">{{ card.title }}</span>
+        </div>
+      </div>
+    </div>
 
-    <el-row :gutter="16">
-      <el-col :span="18">
-        <el-row :gutter="16" class="chart-row">
-          <el-col :span="12">
-            <div class="panel-card">
-              <div class="panel-header">
-                <span>CPU 使用率趋势</span>
-                <el-button type="primary" link size="small" @click="handleRefresh" :loading="loading"><el-icon><Refresh /></el-icon> 刷新</el-button>
-              </div>
+    <div class="main-grid">
+      <div class="charts-section">
+        <div class="charts-row">
+          <div class="chart-card">
+            <div class="card-header">
+              <span class="card-title">CPU 使用率趋势</span>
+              <button class="btn-refresh" @click="handleRefresh" :disabled="loading">
+                <el-icon><Refresh /></el-icon>
+                <span>刷新</span>
+              </button>
+            </div>
+            <div class="card-body">
               <v-chart :option="cpuOption" autoresize style="height: 240px" />
             </div>
-          </el-col>
-          <el-col :span="12">
-            <div class="panel-card">
-              <div class="panel-header"><span>内存使用率趋势</span></div>
+          </div>
+          <div class="chart-card">
+            <div class="card-header">
+              <span class="card-title">内存使用率趋势</span>
+            </div>
+            <div class="card-body">
               <v-chart :option="memoryOption" autoresize style="height: 240px" />
             </div>
-          </el-col>
-        </el-row>
+          </div>
+        </div>
 
-        <div class="panel-card">
-          <div class="panel-header"><span>服务器状态</span></div>
-          <el-table :data="serverList" style="width: 100%" class="dark-table">
-            <el-table-column label="服务器" min-width="180">
-              <template #default="{ row }">
-                <div class="server-cell">
-                  <span class="server-name">{{ row.name }}</span>
-                  <span class="server-ip">{{ row.ip }}:{{ row.port }}</span>
-                </div>
-              </template>
-            </el-table-column>
-            <el-table-column label="状态" width="100" align="center">
-              <template #default="{ row }">
-                <span class="status-dot" :class="row.status"></span>
-                {{ row.status === 'online' ? '在线' : '离线' }}
-              </template>
-            </el-table-column>
-            <el-table-column label="CPU" width="160">
-              <template #default="{ row }">
-                <div class="progress-wrapper">
-                  <div class="progress-bar" :style="{ width: (row.cpuUsage || 0) + '%', background: getProgressColor(row.cpuUsage) }"></div>
-                  <span>{{ row.cpuUsage || 0 }}%</span>
-                </div>
-              </template>
-            </el-table-column>
-            <el-table-column label="内存" width="160">
-              <template #default="{ row }">
-                <div class="progress-wrapper">
-                  <div class="progress-bar" :style="{ width: (row.memoryUsage || 0) + '%', background: getProgressColor(row.memoryUsage) }"></div>
-                  <span>{{ row.memoryUsage || 0 }}%</span>
-                </div>
-              </template>
-            </el-table-column>
-            <el-table-column prop="version" label="版本" width="80" align="center" />
-            <el-table-column prop="uptime" label="运行时间" width="100" align="center" />
-          </el-table>
+        <div class="chart-card">
+          <div class="card-header">
+            <span class="card-title">服务器状态</span>
+          </div>
+          <div class="card-body">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>服务器</th>
+                  <th>状态</th>
+                  <th>CPU</th>
+                  <th>内存</th>
+                  <th>版本</th>
+                  <th>运行时间</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="server in serverList" :key="server.id">
+                  <td>
+                    <div class="server-info">
+                      <span class="server-name">{{ server.name }}</span>
+                      <span class="server-ip">{{ server.ip }}:{{ server.port }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span :class="['status-badge', server.status === 'online' ? 'online' : 'offline']">
+                      {{ server.status === 'online' ? '在线' : '离线' }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="progress-bar">
+                      <div class="progress-fill" :style="{ width: (server.cpuUsage || 0) + '%', background: getProgressColor(server.cpuUsage) }"></div>
+                    </div>
+                    <span class="progress-text">{{ server.cpuUsage || 0 }}%</span>
+                  </td>
+                  <td>
+                    <div class="progress-bar">
+                      <div class="progress-fill" :style="{ width: (server.memoryUsage || 0) + '%', background: getProgressColor(server.memoryUsage) }"></div>
+                    </div>
+                    <span class="progress-text">{{ server.memoryUsage || 0 }}%</span>
+                  </td>
+                  <td>{{ server.version }}</td>
+                  <td>{{ server.uptime }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-      </el-col>
+      </div>
 
-      <el-col :span="6">
-        <div class="panel-card health-panel">
-          <div class="panel-header"><span>系统健康度</span></div>
-          <v-chart :option="healthOption" autoresize style="height: 170px" />
+      <div class="side-section">
+        <div class="chart-card side-card">
+          <div class="card-header">
+            <span class="card-title">系统健康度</span>
+          </div>
+          <div class="card-body">
+            <v-chart :option="healthOption" autoresize style="height: 170px" />
+          </div>
         </div>
-        <div class="panel-card" style="margin-top: 16px">
-          <div class="panel-header"><span>网络流量分布</span></div>
-          <v-chart :option="networkOption" autoresize style="height: 210px" />
+        <div class="chart-card side-card">
+          <div class="card-header">
+            <span class="card-title">网络流量分布</span>
+          </div>
+          <div class="card-body">
+            <v-chart :option="networkOption" autoresize style="height: 210px" />
+          </div>
         </div>
-      </el-col>
-    </el-row>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.dashboard { display: flex; flex-direction: column; gap: 16px; }
-.stats-row { margin-bottom: 0; }
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
 
 .stat-card {
-  background: #1e1e1e;
-  border: 1px solid #2a2a2a;
-  border-radius: 3px;
-  padding: 18px;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
 }
-.stat-card:hover { border-color: #383838; }
 
 .stat-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 3px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  color: #ffffff;
 }
-.type-0 .stat-icon { background-color: #6366f1; }
-.type-1 .stat-icon { background-color: #22c55e; }
-.type-2 .stat-icon { background-color: #f59e0b; }
-.type-3 .stat-icon { background-color: #ef4444; }
 
-.stat-info { flex: 1; }
-.stat-value { font-size: 24px; font-weight: 600; color: #e5e5e5; line-height: 1.2; }
-.stat-title { font-size: 13px; color: #777; margin-top: 4px; }
+.stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 
-.chart-row { margin-bottom: 16px; }
+.stat-value {
+  font-size: 28px;
+  font-weight: 300;
+  color: var(--color-text-primary);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
 
-.panel-card {
-  background: #1e1e1e;
-  border: 1px solid #2a2a2a;
-  border-radius: 3px;
+.stat-label {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 16px;
+}
+
+.charts-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.charts-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.chart-card {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.btn-refresh {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.btn-refresh:hover {
+  background: var(--site-context-highlight-color);
+  border-color: var(--site-context-highlight-color);
+  color: #ffffff;
+}
+
+.btn-refresh:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.card-body {
+  padding: 20px;
+}
+
+.side-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.side-card .card-body {
   padding: 16px;
 }
 
-.panel-header {
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.data-table td {
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border);
+  line-height: 1.15;
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table tr:hover td {
+  background: #fafafa;
+}
+
+.server-info {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 13px;
-  font-weight: 500;
-  color: #bbb;
-  margin-bottom: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #2a2a2a;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.server-cell { display: flex; flex-direction: column; gap: 2px; }
-.server-name { font-weight: 500; color: #ddd; }
-.server-ip { font-size: 12px; color: #666; }
+.server-name {
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
 
-.status-dot {
+.server-ip {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.status-badge {
   display: inline-block;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  margin-right: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
-.status-dot.online { background: #22c55e; box-shadow: 0 0 4px rgba(34, 197, 94, 0.5); }
-.status-dot.offline { background: #ef4444; box-shadow: 0 0 4px rgba(239, 68, 68, 0.5); }
 
-.progress-wrapper { display: flex; align-items: center; gap: 8px; padding: 0 6px; }
-.progress-bar { height: 5px; border-radius: 2px; transition: width 0.3s; flex: 1; }
-.progress-wrapper span { color: #999; font-size: 12px; min-width: 30px; text-align: right; }
+.status-badge.online {
+  background: rgba(103, 194, 58, 0.1);
+  color: #67c23a;
+}
 
-.health-panel { height: fit-content; }
+.status-badge.offline {
+  background: rgba(245, 108, 108, 0.1);
+  color: #f56c6c;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: #e0e0e0;
+  margin-bottom: 4px;
+}
+
+.progress-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 1280px) {
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
+  .side-section {
+    flex-direction: row;
+  }
+  .side-card {
+    flex: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .charts-row {
+    grid-template-columns: 1fr;
+  }
+  .side-section {
+    flex-direction: column;
+  }
+}
 </style>

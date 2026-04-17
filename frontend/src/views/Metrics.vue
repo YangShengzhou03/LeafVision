@@ -1,8 +1,10 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { Download, Refresh, Search } from '@element-plus/icons-vue'
+import { Download, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { api } from '@/api'
+import { getServerList, queryMetrics } from '@/api'
+import { METRIC_OPTIONS, TIME_RANGE_OPTIONS } from '@/constants'
+import { downloadFile } from '@/utils'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { LineChart } from 'echarts/charts'
@@ -13,51 +15,31 @@ use([CanvasRenderer, LineChart, GridComponent, TooltipComponent])
 
 const queryForm = ref({ metric: 'up', serverId: null, timeRange: '1h' })
 
-const metricOptions = [
-  { label: '服务状态', value: 'up' },
-  { label: 'CPU 使用率', value: 'process_cpu_seconds_total' },
-  { label: '内存使用', value: 'process_resident_memory_bytes' },
-  { label: '请求总数', value: 'http_requests_total' }
-]
-
 const serverOptions = ref([])
 const loading = ref(false)
 const chartData = ref([])
 
 const chartOption = computed(() => ({
-  tooltip: { trigger: 'axis', backgroundColor: '#252525', borderColor: '#404040', textStyle: { color: '#ccc' } },
+  tooltip: { trigger: 'axis' },
   grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
   xAxis: {
     type: 'category',
     boundaryGap: false,
-    data: chartData.value.map(item => item.time),
-    axisLine: { lineStyle: { color: '#333' } },
-    axisLabel: { color: '#888' }
+    data: chartData.value.map(item => item.time)
   },
-  yAxis: {
-    type: 'value',
-    splitLine: { lineStyle: { color: '#222' } },
-    axisLabel: { color: '#888' }
-  },
+  yAxis: { type: 'value' },
   series: [{
     type: 'line',
     smooth: true,
     symbol: 'none',
-    areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(99, 102, 241, 0.25)' }, { offset: 1, color: 'rgba(99, 102, 241, 0.02)' }] } },
-    lineStyle: { color: '#6366f1', width: 1.5 },
+    areaStyle: { opacity: 0.2 },
+    lineStyle: { width: 2 },
     data: chartData.value.map(item => item.value)
   }]
 }))
 
-const timeRangeOptions = [
-  { label: '1小时', value: '1h' },
-  { label: '6小时', value: '6h' },
-  { label: '24小时', value: '24h' },
-  { label: '7天', value: '7d' }
-]
-
 const fetchServerList = async () => {
-  const res = await api.getServerList()
+  const res = await getServerList()
   if (res.code === 200 && res.data) {
     serverOptions.value = res.data.map(s => ({ label: s.name, value: s.id }))
     if (serverOptions.value.length > 0) queryForm.value.serverId = serverOptions.value[0].value
@@ -68,7 +50,7 @@ const handleQuery = async () => {
   if (!queryForm.value.serverId) return ElMessage.warning('请选择服务器')
   loading.value = true
   try {
-    const res = await api.queryMetrics(queryForm.value)
+    const res = await queryMetrics(queryForm.value)
     if (res.code === 200) {
       const data = res.data || {}
       if (data.values?.length) {
@@ -88,11 +70,7 @@ const handleQuery = async () => {
 
 const handleExport = () => {
   if (!chartData.value.length) return ElMessage.warning('无数据')
-  const blob = new Blob([JSON.stringify(chartData.value, null, 2)], { type: 'application/json' })
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(blob)
-  a.download = `metrics_${Date.now()}.json`
-  a.click()
+  downloadFile(chartData.value, `metrics_${Date.now()}.json`)
   ElMessage.success('已导出')
 }
 
@@ -100,65 +78,228 @@ onMounted(() => fetchServerList())
 </script>
 
 <template>
-  <div class="page-container">
-    <div class="panel-card">
-      <div class="panel-header"><span>查询条件</span></div>
-      <el-form :inline="true" class="query-form">
-        <el-form-item label="服务器">
-          <el-select v-model="queryForm.serverId" placeholder="选择服务器" size="small">
-            <el-option v-for="item in serverOptions" :key="item.value" :label="item.label" :value="item.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="指标">
-          <el-select v-model="queryForm.metric" size="small">
-            <el-option v-for="item in metricOptions" :key="item.value" :label="item.label" :value="item.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="时间范围">
-          <el-select v-model="queryForm.timeRange" size="small">
-            <el-option v-for="item in timeRangeOptions" :key="item.value" :label="item.label" :value="item.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" size="small" @click="handleQuery" :loading="loading"><el-icon><Search /></el-icon> 查询</el-button>
-          <el-button size="small" @click="handleExport" :disabled="!chartData.length"><el-icon><Download /></el-icon> 导出</el-button>
-        </el-form-item>
-      </el-form>
+  <div class="metrics-page">
+    <div class="query-card">
+      <div class="card-header">
+        <span class="card-title">查询条件</span>
+      </div>
+      <div class="card-body">
+        <div class="query-form">
+          <div class="form-group">
+            <label class="form-label">服务器</label>
+            <select v-model="queryForm.serverId" class="form-select">
+              <option :value="null">选择服务器</option>
+              <option v-for="item in serverOptions" :key="item.value" :value="item.value">
+                {{ item.label }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">指标</label>
+            <select v-model="queryForm.metric" class="form-select">
+              <option v-for="item in METRIC_OPTIONS" :key="item.value" :value="item.value">
+                {{ item.label }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">时间范围</label>
+            <select v-model="queryForm.timeRange" class="form-select">
+              <option v-for="item in TIME_RANGE_OPTIONS" :key="item.value" :value="item.value">
+                {{ item.label }}
+              </option>
+            </select>
+          </div>
+          <div class="form-actions">
+            <button class="btn-primary" @click="handleQuery" :disabled="loading">
+              <el-icon><Search /></el-icon>
+              <span>查询</span>
+            </button>
+            <button class="btn-secondary" @click="handleExport" :disabled="!chartData.length">
+              <el-icon><Download /></el-icon>
+              <span>导出</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="panel-card">
-      <div class="panel-header"><span>查询结果</span></div>
-      <v-chart v-if="chartData.length > 0" :option="chartOption" autoresize style="height: 380px" />
-      <div v-else class="empty-tip">请先查询数据</div>
+    <div class="result-card">
+      <div class="card-header">
+        <span class="card-title">查询结果</span>
+      </div>
+      <div class="card-body">
+        <div v-if="chartData.length > 0" class="chart-container">
+          <v-chart :option="chartOption" autoresize style="height: 380px" />
+        </div>
+        <div v-else class="empty-state">
+          <span class="empty-text">请先查询数据</span>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.page-container { display: flex; flex-direction: column; gap: 16px; }
-
-.panel-card {
-  background: #1e1e1e;
-  border: 1px solid #2a2a2a;
-  border-radius: 3px;
-  padding: 16px;
+.metrics-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.panel-header {
-  font-size: 13px;
-  font-weight: 500;
-  color: #bbb;
-  margin-bottom: 14px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #2a2a2a;
+.query-card,
+.result-card {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
 }
 
-.query-form :deep(.el-form-item__label) { color: #888; font-size: 13px; }
+.card-header {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-border);
+}
 
-.empty-tip {
-  text-align: center;
-  color: #555;
-  padding: 60px 0;
+.card-title {
   font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.card-body {
+  padding: 20px;
+}
+
+.query-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 180px;
+}
+
+.form-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.form-select {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--color-text-primary);
+  background: #ffffff;
+  outline: none;
+  transition: border-color 0.15s ease;
+  min-width: 180px;
+}
+
+.form-select:focus {
+  border-color: var(--site-context-highlight-color);
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--site-context-highlight-color);
+  border: none;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.btn-primary:hover {
+  background: var(--site-context-focus-color);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.btn-secondary:hover {
+  border-color: var(--color-text-primary);
+  color: var(--color-text-primary);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.chart-container {
+  width: 100%;
+}
+
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+}
+
+.empty-text {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 768px) {
+  .query-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .form-group {
+    min-width: 100%;
+  }
+  .form-select {
+    min-width: 100%;
+  }
+  .form-actions {
+    width: 100%;
+  }
+  .form-actions button {
+    flex: 1;
+  }
 }
 </style>

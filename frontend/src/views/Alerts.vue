@@ -1,8 +1,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { Refresh } from '@element-plus/icons-vue'
-import { api } from '@/api'
-import { ElMessage } from 'element-plus'
+import { getAlerts } from '@/api'
+import { ALERT_STATUS_MAP, ALERT_SEVERITY_MAP } from '@/constants'
 
 const loading = ref(false)
 const activeTab = ref('alerts')
@@ -13,11 +13,15 @@ const stats = ref({ total: 0, firing: 0, critical: 0 })
 const fetchData = async () => {
   loading.value = true
   try {
-    const res = await api.getAlerts()
+    const res = await getAlerts()
     if (res.code === 200) {
       alertList.value = res.data?.list || []
       alertRules.value = res.data?.rules || []
-      stats.value = res.data?.stats || { total: alertList.value.length, firing: alertList.value.filter(a => a.status === 'firing').length, critical: alertList.value.filter(a => a.severity === 'critical').length }
+      stats.value = res.data?.stats || {
+        total: alertList.value.length,
+        firing: alertList.value.filter(a => a.status === 'firing').length,
+        critical: alertList.value.filter(a => a.severity === 'critical').length
+      }
     }
   } catch (error) {
     console.error(error)
@@ -26,150 +30,400 @@ const fetchData = async () => {
   }
 }
 
-const handleSync = () => {
-  fetchData()
-  ElMessage.success('同步完成')
+const getStatusText = (status) => ALERT_STATUS_MAP[status] || status
+
+const getSeverityText = (severity) => ALERT_SEVERITY_MAP[severity] || severity
+
+const getSeverityClass = (severity) => {
+  if (severity === 'critical') return 'critical'
+  if (severity === 'warning') return 'warning'
+  return 'info'
 }
-
-const getSeverityType = (severity) => ({ critical: 'danger', warning: 'warning', info: 'info' }[severity] || 'info')
-
-const getStatusText = (status) => ({ firing: '告警中', resolved: '已恢复' }[status] || status)
 
 onMounted(() => fetchData())
 </script>
 
 <template>
-  <div class="page-container">
-    <el-row :gutter="16" class="stats-row">
-      <el-col :span="6">
-        <div class="stat-card">
-          <div class="stat-value">{{ stats.total }}</div>
-          <div class="stat-label">总告警</div>
+  <div class="alerts-page">
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-content">
+          <span class="stat-value">{{ stats.total }}</span>
+          <span class="stat-label">总告警</span>
         </div>
-      </el-col>
-      <el-col :span="6">
-        <div class="stat-card warning">
-          <div class="stat-value">{{ stats.firing }}</div>
-          <div class="stat-label">告警中</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-content">
+          <span class="stat-value firing">{{ stats.firing }}</span>
+          <span class="stat-label">告警中</span>
         </div>
-      </el-col>
-      <el-col :span="6">
-        <div class="stat-card danger">
-          <div class="stat-value">{{ stats.critical }}</div>
-          <div class="stat-label">严重</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-content">
+          <span class="stat-value critical">{{ stats.critical }}</span>
+          <span class="stat-label">严重</span>
         </div>
-      </el-col>
-      <el-col :span="6">
-        <div class="stat-card action-card">
-          <el-button type="primary" size="small" @click="handleSync" :loading="loading"><el-icon><Refresh /></el-icon> 同步告警</el-button>
-        </div>
-      </el-col>
-    </el-row>
+      </div>
+      <div class="stat-card action-card">
+        <button class="btn-primary" @click="fetchData" :disabled="loading">
+          <el-icon><Refresh /></el-icon>
+          <span>同步告警</span>
+        </button>
+      </div>
+    </div>
 
-    <div class="panel-card">
-      <el-tabs v-model="activeTab" class="dark-tabs">
-        <el-tab-pane label="告警列表" name="alerts">
-          <el-table :data="alertList" v-loading="loading" class="dark-table">
-            <el-table-column prop="name" label="名称" min-width="200">
-              <template #default="{ row }"><span class="alert-name" :class="row.severity">{{ row.name }}</span></template>
-            </el-table-column>
-            <el-table-column prop="severity" label="级别" width="90" align="center">
-              <template #default="{ row }"><span class="sev-tag" :class="row.severity">{{ row.severity === 'critical' ? '严重' : row.severity === 'warning' ? '警告' : '信息' }}</span></template>
-            </el-table-column>
-            <el-table-column prop="status" label="状态" width="100" align="center">
-              <template #default="{ row }">
-                <span class="status-dot" :class="row.status"></span>
-                {{ getStatusText(row.status) }}
-              </template>
-            </el-table-column>
-            <el-table-column prop="instance" label="实例" width="160" />
-            <el-table-column prop="firedAt" label="触发时间" width="170" />
-            <el-table-column prop="duration" label="持续时间" width="100" align="center" />
-            <el-table-column label="操作" width="80" align="center">
-              <template #default><el-button type="primary" link size="small">详情</el-button></template>
-            </el-table-column>
-          </el-table>
-        </el-tab-pane>
-        <el-tab-pane label="告警规则" name="rules">
-          <el-table :data="alertRules" class="dark-table">
-            <el-table-column prop="name" label="规则名称" min-width="200">
-              <template #default="{ row }"><span class="rule-name">{{ row.name }}</span></template>
-            </el-table-column>
-            <el-table-column prop="expr" label="表达式" min-width="250" show-overflow-tooltip>
-              <template #default="{ row }"><code class="expr-code">{{ row.expr }}</code></template>
-            </el-table-column>
-            <el-table-column prop="duration" label="持续时间" width="100" align="center" />
-            <el-table-column prop="severity" label="级别" width="90" align="center">
-              <template #default="{ row }"><span class="sev-tag" :class="row.severity">{{ row.severity === 'critical' ? '严重' : row.severity === 'warning' ? '警告' : '信息' }}</span></template>
-            </el-table-column>
-            <el-table-column prop="enabled" label="启用" width="70" align="center">
-              <template #default="{ row }"><el-switch v-model="row.enabled" size="small" /></template>
-            </el-table-column>
-            <el-table-column label="操作" width="120" align="center">
-              <template #default><el-button type="primary" link size="small">编辑</el-button><el-button type="danger" link size="small">删除</el-button></template>
-            </el-table-column>
-          </el-table>
-        </el-tab-pane>
-      </el-tabs>
+    <div class="table-card">
+      <div class="tabs-header">
+        <button
+          :class="['tab-btn', { active: activeTab === 'alerts' }]"
+          @click="activeTab = 'alerts'"
+        >
+          告警列表
+        </button>
+        <button
+          :class="['tab-btn', { active: activeTab === 'rules' }]"
+          @click="activeTab = 'rules'"
+        >
+          告警规则
+        </button>
+      </div>
+
+      <div v-if="activeTab === 'alerts'" class="table-content">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>名称</th>
+              <th>级别</th>
+              <th>状态</th>
+              <th>实例</th>
+              <th>触发时间</th>
+              <th>持续时间</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="alert in alertList" :key="alert.name">
+              <td class="alert-name">{{ alert.name }}</td>
+              <td>
+                <span :class="['severity-badge', getSeverityClass(alert.severity)]">
+                  {{ getSeverityText(alert.severity) }}
+                </span>
+              </td>
+              <td>
+                <span :class="['status-badge', alert.status === 'firing' ? 'firing' : 'resolved']">
+                  {{ getStatusText(alert.status) }}
+                </span>
+              </td>
+              <td>{{ alert.instance }}</td>
+              <td>{{ alert.firedAt }}</td>
+              <td>{{ alert.duration }}</td>
+              <td>
+                <button class="btn-link">详情</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div v-if="activeTab === 'rules'" class="table-content">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>规则名称</th>
+              <th>表达式</th>
+              <th>持续时间</th>
+              <th>级别</th>
+              <th>启用</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="rule in alertRules" :key="rule.name">
+              <td class="rule-name">{{ rule.name }}</td>
+              <td class="expr-cell">{{ rule.expr }}</td>
+              <td>{{ rule.duration }}</td>
+              <td>
+                <span :class="['severity-badge', getSeverityClass(rule.severity)]">
+                  {{ getSeverityText(rule.severity) }}
+                </span>
+              </td>
+              <td>
+                <span :class="['toggle-badge', rule.enabled ? 'enabled' : 'disabled']">
+                  {{ rule.enabled ? '是' : '否' }}
+                </span>
+              </td>
+              <td>
+                <div class="action-btns">
+                  <button class="btn-link">编辑</button>
+                  <button class="btn-link danger">删除</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.page-container { display: flex; flex-direction: column; gap: 16px; }
+.alerts-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 
-.stats-row { margin-bottom: 0; }
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
 
 .stat-card {
-  background: #1e1e1e;
-  border: 1px solid #2a2a2a;
-  border-radius: 3px;
-  padding: 18px;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
 }
 
-.stat-card.warning { border-left: 3px solid #f59e0b; }
-.stat-card.danger { border-left: 3px solid #ef4444; }
-.stat-card.action-card { display: flex; align-items: center; justify-content: center; }
-
-.stat-value { font-size: 28px; font-weight: 600; color: #e5e5e5; }
-.stat-label { font-size: 13px; color: #777; margin-top: 4px; }
-
-.panel-card {
-  background: #1e1e1e;
-  border: 1px solid #2a2a2a;
-  border-radius: 3px;
-  padding: 16px;
+.stat-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
 
-.alert-name { color: #818cf8; cursor: pointer; }
-.alert-name.critical { color: #f87171; }
-.alert-name.warning { color: #fbbf24; }
+.stat-value {
+  font-size: 36px;
+  font-weight: 300;
+  color: var(--color-text-primary);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
 
-.sev-tag {
-  padding: 2px 10px;
-  border-radius: 4px;
+.stat-value.firing {
+  color: #e6a23c;
+}
+
+.stat-value.critical {
+  color: #f56c6c;
+}
+
+.stat-label {
   font-size: 12px;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
-.sev-tag.critical { background: rgba(239, 68, 68, 0.15); color: #f87171; }
-.sev-tag.warning { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
-.sev-tag.info { background: rgba(99, 102, 241, 0.15); color: #818cf8; }
 
-.status-dot {
+.action-card {
+  background: transparent;
+  border: none;
+}
+
+.btn-primary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--site-context-highlight-color);
+  border: none;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 12px 24px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.btn-primary:hover {
+  background: var(--site-context-focus-color);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.table-card {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+}
+
+.tabs-header {
+  display: flex;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tab-btn {
+  padding: 16px 24px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: all 0.15s ease;
+}
+
+.tab-btn:hover {
+  color: var(--color-text-primary);
+}
+
+.tab-btn.active {
+  color: var(--site-context-highlight-color);
+  border-bottom-color: var(--site-context-highlight-color);
+}
+
+.table-content {
+  padding: 0;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th {
+  text-align: left;
+  padding: 14px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.data-table td {
+  padding: 14px 16px;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--color-border);
+  line-height: 1.15;
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table tr:hover td {
+  background: #fafafa;
+}
+
+.alert-name,
+.rule-name {
+  font-weight: 700;
+}
+
+.expr-cell {
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--site-context-highlight-color);
+}
+
+.severity-badge {
   display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-right: 6px;
-}
-.status-dot.firing { background: #ef4444; box-shadow: 0 0 6px rgba(239, 68, 68, 0.5); animation: pulse 2s infinite; }
-.status-dot.resolved { background: #22c55e; box-shadow: 0 0 6px rgba(34, 197, 94, 0.5); }
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
-.rule-name { color: #ddd; font-weight: 500; }
-.expr-code { color: #818cf8; font-size: 12px; background: #141414; padding: 2px 6px; border-radius: 3px; }
+.severity-badge.critical {
+  background: rgba(245, 108, 108, 0.1);
+  color: #f56c6c;
+}
+
+.severity-badge.warning {
+  background: rgba(230, 162, 60, 0.1);
+  color: #e6a23c;
+}
+
+.severity-badge.info {
+  background: rgba(144, 147, 153, 0.1);
+  color: #909399;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.status-badge.firing {
+  background: rgba(245, 108, 108, 0.1);
+  color: #f56c6c;
+}
+
+.status-badge.resolved {
+  background: rgba(103, 194, 58, 0.1);
+  color: #67c23a;
+}
+
+.toggle-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.toggle-badge.enabled {
+  background: rgba(103, 194, 58, 0.1);
+  color: #67c23a;
+}
+
+.toggle-badge.disabled {
+  background: rgba(144, 147, 153, 0.1);
+  color: #909399;
+}
+
+.action-btns {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--site-context-highlight-color);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  letter-spacing: 0.02em;
+  transition: color 0.15s ease;
+}
+
+.btn-link:hover {
+  color: var(--site-context-focus-color);
+}
+
+.btn-link.danger {
+  color: #f56c6c;
+}
+
+.btn-link.danger:hover {
+  color: #c45656;
+}
+
+@media (max-width: 768px) {
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 </style>

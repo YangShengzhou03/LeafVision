@@ -17,6 +17,14 @@
     <name>LeafVision Backend</name>
     <description>LeafVision Monitoring System Backend</description>
 
+    <developers>
+        <developer>
+            <name>LeafVision Team</name>
+            <email>YangSZ03@foxmail.com</email>
+            <organization>江西科技师范大学</organization>
+        </developer>
+    </developers>
+
     <properties>
         <java.version>17</java.version>
         <maven.compiler.source>17</maven.compiler.source>
