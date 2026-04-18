@@ -141,6 +141,23 @@ public class UserService {
         return true;
     }
 
+    public boolean changePassword(String username, String oldPassword, String newPassword) {
+        User user = userMapper.findByUsername(username);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+        if (!verifyPassword(oldPassword, user.getPassword()) && !oldPassword.equals(user.getPassword())) {
+            return false;
+        }
+        String encodedPassword = PasswordUtil.encode(newPassword);
+        userMapper.updatePassword(user.getId(), encodedPassword);
+        return true;
+    }
+
+    public String getUsernameFromToken(String token) {
+        return null;
+    }
+
     public String generateRandomUsername() {
         Random random = new Random();
         StringBuilder username;

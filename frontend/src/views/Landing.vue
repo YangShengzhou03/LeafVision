@@ -1,8 +1,10 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { onMounted, ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/stores/user'
 
+const { t } = useI18n()
 const router = useRouter()
 const userStore = useUserStore()
 const mobileMenuOpen = ref(false)
@@ -10,19 +12,19 @@ const currentYear = computed(() => new Date().getFullYear())
 
 const isLoggedIn = computed(() => userStore.isLoggedIn)
 
-const features = [
-  { title: '实时监控', desc: '毫秒级数据采集，全栈基础设施状态尽在掌控' },
-  { title: '指标分析', desc: '多维指标检索与智能关联，洞察系统运行本质' },
-  { title: '智能告警', desc: '精准规则引擎与多渠道触达，故障无处遁形' },
-  { title: '链路追踪', desc: '端到端分布式追踪，秒级定位性能瓶颈' }
-]
+const features = computed(() => [
+  { title: t('实时监控'), desc: t('毫秒级数据采集，全栈基础设施状态尽在掌握') },
+  { title: t('指标分析'), desc: t('多维指标检索与智能关联，洞察系统本质') },
+  { title: t('智能告警'), desc: t('精准规则引擎与多渠道触达，故障无处遁形') },
+  { title: t('分布式链路追踪'), desc: t('端到端分布式追踪，秒级定位性能瓶颈') }
+])
 
-const stats = [
-  { value: '99.9%', label: 'SLA 可用性' },
-  { value: '<10ms', label: '采集延迟' },
-  { value: '100+', label: '监控维度' },
-  { value: '24/7', label: '持续守护' }
-]
+const stats = computed(() => [
+  { value: '99.9%', label: t('SLA可用性') },
+  { value: '<10ms', label: t('采集延迟') },
+  { value: '100+', label: t('监控维度') },
+  { value: '24/7', label: t('全天候守护') }
+])
 
 const handleLogin = () => router.push('/login')
 const handleRegister = () => router.push('/register')
@@ -50,17 +52,17 @@ onMounted(() => {
           <span class="brand">LEAFVISION</span>
         </div>
         <nav class="nav" :class="{ open: mobileMenuOpen }">
-          <a href="#features" @click="mobileMenuOpen = false">功能</a>
-          <a href="#stats" @click="mobileMenuOpen = false">数据</a>
-          <a href="#contact" @click="mobileMenuOpen = false">联系</a>
+          <a href="#features" @click="mobileMenuOpen = false">{{ t('功能特性') }}</a>
+          <a href="#stats" @click="mobileMenuOpen = false">{{ t('统计数据') }}</a>
+          <a href="#contact" @click="mobileMenuOpen = false">{{ t('联系我们') }}</a>
         </nav>
         <div class="actions">
           <template v-if="isLoggedIn">
-            <button class="btn-primary" @click="handleGoToConsole">进入控制台</button>
+            <button class="btn-primary" @click="handleGoToConsole">{{ t('进入控制台') }}</button>
           </template>
           <template v-else>
-            <button class="btn-ghost" @click="handleLogin">登录</button>
-            <button class="btn-primary" @click="handleRegister">开始使用</button>
+            <button class="btn-ghost" @click="handleLogin">{{ t('登录') }}</button>
+            <button class="btn-primary" @click="handleRegister">{{ t('立即开始') }}</button>
           </template>
         </div>
         <button class="mobile-toggle" @click="toggleMobileMenu">
@@ -75,20 +77,20 @@ onMounted(() => {
       <div class="hero-overlay"></div>
       <div class="hero-content">
         <span class="hero-tag">INFRASTRUCTURE OBSERVABILITY</span>
-        <h1>精准洞察<br/>全域感知</h1>
-        <p class="subtitle">以工程精度重新定义基础设施可观测性——从指标、日志到链路，构建统一感知体系</p>
+        <h1>{{ t('精准洞察') }}<br/>{{ t('全面感知') }}</h1>
+        <p class="subtitle">{{ t('以工程级精度重新定义基础设施可观测性 - 从指标、日志到链路，构建统一感知体系') }}</p>
         <div class="hero-actions">
           <template v-if="isLoggedIn">
             <button class="btn-hero-primary" @click="handleGoToConsole">
-              进入控制台
+              {{ t('进入控制台') }}
             </button>
           </template>
           <template v-else>
             <button class="btn-hero-primary" @click="handleRegister">
-              立即开始
+              {{ t('立即体验') }}
             </button>
             <button class="btn-hero-ghost" @click="handleLogin">
-              登录控制台
+              {{ t('登录控制台') }}
             </button>
           </template>
         </div>
@@ -107,8 +109,8 @@ onMounted(() => {
     <section id="features" class="features">
       <div class="section-header animate-in">
         <span class="section-tag">CAPABILITIES</span>
-        <h2>核心能力</h2>
-        <p>为严肃的基础设施而构建</p>
+        <h2>{{ t('核心能力') }}</h2>
+        <p>{{ t('为严肃基础设施而生') }}</p>
       </div>
       <div class="features-grid">
         <div v-for="(feature, index) in features" :key="feature.title" class="feature-card animate-in" :style="{ transitionDelay: index * 0.1 + 's' }">
@@ -122,10 +124,10 @@ onMounted(() => {
     <section id="contact" class="contact">
       <div class="contact-content animate-in">
         <span class="contact-tag">GET STARTED</span>
-        <h2>即刻启程</h2>
-        <p>注册即可免费体验，让基础设施可观测性不再妥协</p>
+        <h2>{{ t('现在开始') }}</h2>
+        <p>{{ t('免费注册试用，基础设施可观测性不妥协') }}</p>
         <button class="btn-hero-primary" @click="isLoggedIn ? handleGoToConsole() : handleRegister()">
-          {{ isLoggedIn ? '进入控制台' : '免费试用' }}
+          {{ isLoggedIn ? t('进入控制台') : t('免费试用') }}
         </button>
       </div>
     </section>
@@ -144,7 +146,17 @@ onMounted(() => {
 <style scoped>
 .landing {
   min-height: 100vh;
+  overflow-y: auto;
   background: var(--site-context-theme-color);
+}
+
+.landing::-webkit-scrollbar {
+  display: none;
+}
+
+.landing {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 .header {

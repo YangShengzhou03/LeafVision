@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, markRaw } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import {
   Monitor, Setting, Warning, DataLine, Document, User, Tools,
   Fold, Expand, Connection, Timer, Bell, PieChart, Key, House, SwitchButton, List, Folder
@@ -9,40 +10,41 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { PERMISSION_CODE } from '@/constants'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const isCollapse = ref(false)
 
-const allMenuItems = [
-  { path: '/monitor/dashboard', title: '监控总览', icon: markRaw(Monitor), permission: PERMISSION_CODE.DASHBOARD },
-  { path: '/monitor/realtime', title: '实时监控', icon: markRaw(Timer), permission: PERMISSION_CODE.REALTIME },
-  { path: '/monitor/servers', title: '主机管理', icon: markRaw(House), permission: PERMISSION_CODE.SERVERS },
-  { path: '/monitor/server-groups', title: '服务器分组', icon: markRaw(Folder), permission: PERMISSION_CODE.SERVER_GROUPS },
-  { path: '/monitor/containers', title: '容器管理', icon: markRaw(Connection), permission: PERMISSION_CODE.CONTAINERS },
-  { path: '/monitor/services', title: '服务管理', icon: markRaw(Tools), permission: PERMISSION_CODE.SERVICES },
-  { path: '/monitor/metrics', title: '指标检索', icon: markRaw(DataLine), permission: PERMISSION_CODE.METRICS },
-  { path: '/monitor/logs', title: '日志查询', icon: markRaw(Document), permission: PERMISSION_CODE.LOGS },
-  { path: '/monitor/traces', title: '链路追踪', icon: markRaw(PieChart), permission: PERMISSION_CODE.TRACES },
-  { path: '/monitor/alerts', title: '告警列表', icon: markRaw(Warning), permission: PERMISSION_CODE.ALERTS },
-  { path: '/monitor/alert-rules', title: '告警规则', icon: markRaw(Bell), permission: PERMISSION_CODE.ALERT_RULES },
-  { path: '/monitor/users', title: '用户管理', icon: markRaw(User), permission: PERMISSION_CODE.USERS },
-  { path: '/monitor/roles', title: '角色管理', icon: markRaw(Key), permission: PERMISSION_CODE.ROLES },
-  { path: '/monitor/permissions', title: '权限配置', icon: markRaw(Setting), permission: PERMISSION_CODE.PERMISSIONS },
-  { path: '/monitor/audit-logs', title: '审计日志', icon: markRaw(List), permission: PERMISSION_CODE.AUDIT_LOGS },
-  { path: '/monitor/settings', title: '系统设置', icon: markRaw(Setting), permission: PERMISSION_CODE.SETTINGS },
-]
+const allMenuItems = computed(() => [
+  { path: '/monitor/dashboard', title: t('监控总览'), icon: markRaw(Monitor), permission: PERMISSION_CODE.DASHBOARD },
+  { path: '/monitor/realtime', title: t('实时监控'), icon: markRaw(Timer), permission: PERMISSION_CODE.REALTIME },
+  { path: '/monitor/servers', title: t('主机管理'), icon: markRaw(House), permission: PERMISSION_CODE.SERVERS },
+  { path: '/monitor/server-groups', title: t('服务器分组'), icon: markRaw(Folder), permission: PERMISSION_CODE.SERVER_GROUPS },
+  { path: '/monitor/containers', title: t('容器管理'), icon: markRaw(Connection), permission: PERMISSION_CODE.CONTAINERS },
+  { path: '/monitor/services', title: t('服务管理'), icon: markRaw(Tools), permission: PERMISSION_CODE.SERVICES },
+  { path: '/monitor/metrics', title: t('指标检索'), icon: markRaw(DataLine), permission: PERMISSION_CODE.METRICS },
+  { path: '/monitor/logs', title: t('日志查询'), icon: markRaw(Document), permission: PERMISSION_CODE.LOGS },
+  { path: '/monitor/traces', title: t('链路追踪'), icon: markRaw(PieChart), permission: PERMISSION_CODE.TRACES },
+  { path: '/monitor/alerts', title: t('告警列表'), icon: markRaw(Warning), permission: PERMISSION_CODE.ALERTS },
+  { path: '/monitor/alert-rules', title: t('告警规则'), icon: markRaw(Bell), permission: PERMISSION_CODE.ALERT_RULES },
+  { path: '/monitor/users', title: t('用户管理'), icon: markRaw(User), permission: PERMISSION_CODE.USERS },
+  { path: '/monitor/roles', title: t('角色管理'), icon: markRaw(Key), permission: PERMISSION_CODE.ROLES },
+  { path: '/monitor/permissions', title: t('权限配置'), icon: markRaw(Setting), permission: PERMISSION_CODE.PERMISSIONS },
+  { path: '/monitor/audit-logs', title: t('审计日志'), icon: markRaw(List), permission: PERMISSION_CODE.AUDIT_LOGS },
+  { path: '/monitor/settings', title: t('系统设置'), icon: markRaw(Setting), permission: PERMISSION_CODE.SETTINGS },
+])
 
 const menuItems = computed(() => {
-  return allMenuItems.filter(item => userStore.hasPermission(item.permission))
+  return allMenuItems.value.filter(item => userStore.hasPermission(item.permission))
 })
 
 const activeMenu = computed(() => route.path)
 const currentMenuItem = computed(() => menuItems.value.find((item) => item.path === route.path) || menuItems.value[0])
 
 const recentPages = ref([
-  { path: '/monitor/dashboard', title: '监控总览', closable: true },
-  { path: '/monitor/servers', title: '主机管理', closable: true },
+  { path: '/monitor/dashboard', titleKey: '监控总览', closable: true },
+  { path: '/monitor/servers', titleKey: '主机管理', closable: true },
 ])
 
 const handleTagClick = (path) => router.push(path)
@@ -59,19 +61,22 @@ const handleMenuSelect = (path) => {
   router.push(path)
   if (!recentPages.value.find(tag => tag.path === path)) {
     const item = menuItems.value.find(menuItem => menuItem.path === path)
-    if (item) recentPages.value.push({ path: item.path, title: item.title, closable: true })
+    if (item) {
+      const titleKey = allMenuItems.value.find(m => m.path === path)?.title || '监控总览'
+      recentPages.value.push({ path: item.path, titleKey: titleKey, closable: true })
+    }
   }
 }
 
 const handleLogout = async () => {
   try {
-    await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(t('确定要退出登录吗？'), t('提示'), {
+      confirmButtonText: t('确认'),
+      cancelButtonText: t('取消'),
       type: 'warning'
     })
     await userStore.logout()
-    ElMessage.success('已退出登录')
+    ElMessage.success(t('退出成功'))
     router.push('/')
   } catch {
   }
@@ -109,7 +114,7 @@ const handleLogout = async () => {
         <button class="collapse-btn" @click="isCollapse = !isCollapse">
           <el-icon><component :is="isCollapse ? Expand : Fold" /></el-icon>
         </button>
-        <span class="page-title">{{ currentMenuItem?.title || '监控中心' }}</span>
+        <span class="page-title">{{ currentMenuItem?.title || t('监控中心') }}</span>
         <div class="header-actions">
           <el-dropdown trigger="click">
             <div class="user-dropdown">
@@ -120,13 +125,13 @@ const handleLogout = async () => {
             </div>
             <template #dropdown>
               <el-dropdown-menu class="user-menu">
-                <el-dropdown-item @click="router.push('/monitor/settings')">
+                <el-dropdown-item @click="router.push('/monitor/profile')">
                   <el-icon><Setting /></el-icon>
-                  <span>个人设置</span>
+                  <span>{{ t('个人设置') }}</span>
                 </el-dropdown-item>
                 <el-dropdown-item divided @click="handleLogout">
                   <el-icon><SwitchButton /></el-icon>
-                  <span>退出登录</span>
+                  <span>{{ t('退出登录') }}</span>
                 </el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -143,7 +148,7 @@ const handleLogout = async () => {
               :class="['tag-item', { active: route.path === tag.path }]"
               @click="handleTagClick(tag.path)"
             >
-              <span class="tag-text">{{ tag.title }}</span>
+              <span class="tag-text">{{ t(tag.titleKey) }}</span>
               <span class="tag-close" @click.stop="handleTagClose(tag.path)">×</span>
             </span>
           </div>
@@ -302,71 +307,68 @@ const handleLogout = async () => {
 
 .user-name {
   font-size: 14px;
-  font-weight: 400;
   color: var(--color-text-primary);
-  letter-spacing: 0.02em;
-  line-height: 1.15;
 }
 
 .tags-nav {
   flex-shrink: 0;
+  height: 36px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--color-border);
+  padding: 0 16px;
   display: flex;
   align-items: center;
-  height: 40px;
-  padding: 0 16px;
-  background: #f8f8f8;
-  border-bottom: 1px solid var(--color-border);
 }
 
 .tags-scrollbar {
-  flex: 1;
-  display: flex;
-  align-items: center;
+  height: 100%;
+  width: 100%;
 }
 
 .tags-scrollbar :deep(.el-scrollbar__wrap) {
   height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .tags-scrollbar :deep(.el-scrollbar__view) {
+  height: 100%;
   display: flex;
   align-items: center;
-  height: 100%;
 }
 
 .tags-list {
   display: flex;
   align-items: center;
-  gap: 4px;
+  height: 100%;
+  gap: 8px;
+  flex-wrap: nowrap;
 }
 
 .tag-item {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   padding: 0 12px;
-  height: 28px;
-  background: #ffffff;
+  height: 26px;
+  background: #f5f5f5;
   border: 1px solid var(--color-border);
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 400;
   color: var(--color-text-secondary);
-  letter-spacing: 0.02em;
-  line-height: 1.15;
+  font-size: 12px;
+  cursor: pointer;
   transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .tag-item:hover {
-  color: var(--color-text-primary);
-  border-color: var(--color-text-muted);
+  background: #e8e8e8;
 }
 
 .tag-item.active {
   background: var(--site-context-highlight-color);
   border-color: var(--site-context-highlight-color);
   color: #ffffff;
-  font-weight: 700;
 }
 
 .tag-text {
@@ -374,15 +376,9 @@ const handleLogout = async () => {
 }
 
 .tag-close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 14px;
-  height: 14px;
   font-size: 14px;
   line-height: 1;
   opacity: 0.6;
-  transition: opacity 0.15s ease;
 }
 
 .tag-close:hover {
@@ -391,8 +387,8 @@ const handleLogout = async () => {
 
 .main {
   flex: 1;
+  background: var(--color-background);
   padding: 20px;
-  overflow-y: auto;
-  background: #f5f5f5;
+  overflow: auto;
 }
 </style>

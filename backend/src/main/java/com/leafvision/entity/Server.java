@@ -18,6 +18,7 @@ public class Server {
     private Integer port;
     private String type;
     private String status;
+    private Integer dockerPort;
     private Double cpuUsage;
     private Double memoryUsage;
     private String version;
@@ -84,6 +85,14 @@ public class Server {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public Integer getDockerPort() {
+        return dockerPort;
+    }
+
+    public void setDockerPort(Integer dockerPort) {
+        this.dockerPort = dockerPort;
     }
 
     public Double getCpuUsage() {

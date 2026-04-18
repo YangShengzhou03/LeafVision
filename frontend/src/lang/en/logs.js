@@ -1,0 +1,20 @@
+export default {
+  '查询条件': 'Query Condition',
+  '服务器': 'Server',
+  '全部服务器': 'All Servers',
+  '日志级别': 'Log Level',
+  '全部级别': 'All Levels',
+  '关键字': 'Keyword',
+  '请输入关键字': 'Please enter keyword',
+  '条数限制': 'Limit',
+  '搜索': 'Search',
+  '导出': 'Export',
+  '日志列表': 'Log List',
+  '共': 'Total',
+  '条': 'records',
+  '暂无日志数据': 'No log data available',
+  '查询成功': 'Query successful',
+  '查询失败': 'Query failed',
+  '暂无数据可导出': 'No data to export',
+  '导出成功': 'Export successful'
+}

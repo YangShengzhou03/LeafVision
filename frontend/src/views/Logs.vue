@@ -1,9 +1,12 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Search, Download, Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getLogs, getServerList } from '@/api'
 import { downloadFile } from '@/utils'
+
+const { t } = useI18n()
 
 const loading = ref(false)
 const logList = ref([])
@@ -17,23 +20,30 @@ const queryForm = ref({
 })
 
 const serverOptions = ref([
-  { label: '全部服务器', value: null }
+  { label: t('全部服务器'), value: null }
 ])
 
 const levelOptions = [
-  { label: '全部级别', value: 'all' },
+  { label: t('全部级别'), value: 'all' },
   { label: 'DEBUG', value: 'debug' },
   { label: 'INFO', value: 'info' },
   { label: 'WARN', value: 'warn' },
   { label: 'ERROR', value: 'error' }
 ]
 
+const initLabels = () => {
+  serverOptions.value = [
+    { label: t('全部服务器'), value: null }
+  ]
+  levelOptions[0].label = t('全部级别')
+}
+
 const fetchServerOptions = async () => {
   try {
     const res = await getServerList()
     if (res.code === 200 && res.data) {
       serverOptions.value = [
-        { label: '全部服务器', value: null },
+        { label: t('全部服务器'), value: null },
         ...res.data.map(s => ({ label: s.name, value: s.id }))
       ]
     }
@@ -48,10 +58,10 @@ const handleSearch = async () => {
     const res = await getLogs(queryForm.value)
     if (res.code === 200) {
       logList.value = res.data || []
-      ElMessage.success(`查询到 ${logList.value.length} 条日志`)
+      ElMessage.success(t('查询成功'))
     }
   } catch (error) {
-    ElMessage.error('查询失败')
+    ElMessage.error(t('查询失败'))
   } finally {
     loading.value = false
   }
@@ -59,11 +69,11 @@ const handleSearch = async () => {
 
 const handleExport = () => {
   if (!logList.value.length) {
-    ElMessage.warning('无数据可导出')
+    ElMessage.warning(t('暂无数据可导出'))
     return
   }
   downloadFile(logList.value, `logs_${Date.now()}.json`)
-  ElMessage.success('导出成功')
+  ElMessage.success(t('导出成功'))
 }
 
 const getLevelClass = (level) => {
@@ -80,6 +90,7 @@ const formatDateTime = (dateStr) => {
 }
 
 onMounted(async () => {
+  initLabels()
   await fetchServerOptions()
   handleSearch()
 })
@@ -89,12 +100,12 @@ onMounted(async () => {
   <div class="logs-page">
     <div class="query-card">
       <div class="card-header">
-        <span class="card-title">查询条件</span>
+        <span class="card-title">{{ t('查询条件') }}</span>
       </div>
       <div class="card-body">
         <div class="query-form">
           <div class="form-group">
-            <label class="form-label">服务器</label>
+            <label class="form-label">{{ t('服务器') }}</label>
             <select v-model="queryForm.serverId" class="form-select">
               <option v-for="item in serverOptions" :key="item.value" :value="item.value">
                 {{ item.label }}
@@ -102,7 +113,7 @@ onMounted(async () => {
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">日志级别</label>
+            <label class="form-label">{{ t('日志级别') }}</label>
             <select v-model="queryForm.level" class="form-select">
               <option v-for="item in levelOptions" :key="item.value" :value="item.value">
                 {{ item.label }}
@@ -110,30 +121,30 @@ onMounted(async () => {
             </select>
           </div>
           <div class="form-group flex-1">
-            <label class="form-label">关键词</label>
+            <label class="form-label">{{ t('关键字') }}</label>
             <input
               v-model="queryForm.keyword"
               type="text"
-              placeholder="输入关键词搜索"
+              :placeholder="t('请输入关键字')"
               class="form-input"
             />
           </div>
           <div class="form-group">
-            <label class="form-label">条数限制</label>
+            <label class="form-label">{{ t('条数限制') }}</label>
             <select v-model="queryForm.limit" class="form-select">
-              <option :value="100">100 条</option>
-              <option :value="500">500 条</option>
-              <option :value="1000">1000 条</option>
+              <option :value="100">100</option>
+              <option :value="500">500</option>
+              <option :value="1000">1000</option>
             </select>
           </div>
           <div class="form-actions">
             <button class="btn-primary" @click="handleSearch" :disabled="loading">
               <el-icon><Search /></el-icon>
-              <span>查询</span>
+              <span>{{ t('搜索') }}</span>
             </button>
             <button class="btn-secondary" @click="handleExport" :disabled="!logList.length">
               <el-icon><Download /></el-icon>
-              <span>导出</span>
+              <span>{{ t('导出') }}</span>
             </button>
           </div>
         </div>
@@ -142,8 +153,8 @@ onMounted(async () => {
 
     <div class="result-card">
       <div class="card-header">
-        <span class="card-title">日志列表</span>
-        <span class="log-count">共 {{ logList.length }} 条</span>
+        <span class="card-title">{{ t('日志列表') }}</span>
+        <span class="log-count">{{ t('共') }} {{ logList.length }} {{ t('条') }}</span>
       </div>
       <div class="card-body">
         <div class="log-list">
@@ -154,7 +165,7 @@ onMounted(async () => {
             <span class="log-message">{{ log.message }}</span>
           </div>
           <div v-if="!logList.length && !loading" class="empty-state">
-            <span class="empty-text">暂无日志数据</span>
+            <span class="empty-text">{{ t('暂无日志数据') }}</span>
           </div>
         </div>
       </div>

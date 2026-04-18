@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
   getServerGroupTree, 
@@ -12,11 +13,13 @@ import {
 } from '@/api'
 import { getServers } from '@/api'
 
+const { t } = useI18n()
+
 const loading = ref(false)
 const groups = ref([])
 const servers = ref([])
 const dialogVisible = ref(false)
-const dialogTitle = ref('新建分组')
+const dialogTitle = ref('')
 const form = ref({
   id: null,
   name: '',
@@ -33,7 +36,7 @@ const fetchGroups = async () => {
     const res = await getServerGroupTree()
     groups.value = res.data || []
   } catch (error) {
-    ElMessage.error('获取分组列表失败')
+    ElMessage.error(t('获取分组失败'))
   } finally {
     loading.value = false
   }
@@ -44,12 +47,12 @@ const fetchServers = async () => {
     const res = await getServers()
     servers.value = res.data || []
   } catch (error) {
-    console.error('获取服务器列表失败', error)
+    console.error(t('获取服务器失败'), error)
   }
 }
 
 const handleCreate = (parentId = 0) => {
-  dialogTitle.value = '新建分组'
+  dialogTitle.value = t('新建分组')
   form.value = {
     id: null,
     name: '',
@@ -60,7 +63,7 @@ const handleCreate = (parentId = 0) => {
 }
 
 const handleEdit = (group) => {
-  dialogTitle.value = '编辑分组'
+  dialogTitle.value = t('编辑分组')
   form.value = {
     id: group.id,
     name: group.name,
@@ -72,11 +75,11 @@ const handleEdit = (group) => {
 
 const handleDelete = async (group) => {
   try {
-    await ElMessageBox.confirm(`确定删除分组"${group.name}"吗？`, '提示', {
+    await ElMessageBox.confirm(t('确定删除分组', { name: group.name }), t('提示'), {
       type: 'warning'
     })
     await deleteServerGroup(group.id)
-    ElMessage.success('删除成功')
+    ElMessage.success(t('删除成功'))
     fetchGroups()
     if (selectedGroup.value?.id === group.id) {
       selectedGroup.value = null
@@ -84,28 +87,28 @@ const handleDelete = async (group) => {
     }
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('删除失败')
+      ElMessage.error(t('删除失败'))
     }
   }
 }
 
 const handleSubmit = async () => {
   if (!form.value.name) {
-    ElMessage.warning('请输入分组名称')
+    ElMessage.warning(t('请输入分组名称'))
     return
   }
   try {
     if (form.value.id) {
       await updateServerGroup(form.value.id, form.value)
-      ElMessage.success('更新成功')
+      ElMessage.success(t('更新成功'))
     } else {
       await createServerGroup(form.value)
-      ElMessage.success('创建成功')
+      ElMessage.success(t('创建成功'))
     }
     dialogVisible.value = false
     fetchGroups()
   } catch (error) {
-    ElMessage.error(error.response?.data?.message || '操作失败')
+    ElMessage.error(error.response?.data?.message || t('操作失败'))
   }
 }
 
@@ -123,10 +126,10 @@ const handleAddServer = async (server) => {
   if (!selectedGroup.value) return
   try {
     await addServerToGroup(selectedGroup.value.id, server.id)
-    ElMessage.success('添加成功')
+    ElMessage.success(t('添加成功'))
     handleSelectGroup(selectedGroup.value)
   } catch (error) {
-    ElMessage.error('添加失败')
+    ElMessage.error(t('添加失败'))
   }
 }
 
@@ -134,10 +137,10 @@ const handleRemoveServer = async (server) => {
   if (!selectedGroup.value) return
   try {
     await removeServerFromGroup(selectedGroup.value.id, server.id)
-    ElMessage.success('移除成功')
+    ElMessage.success(t('移除成功'))
     handleSelectGroup(selectedGroup.value)
   } catch (error) {
-    ElMessage.error('移除失败')
+    ElMessage.error(t('移除失败'))
   }
 }
 
@@ -156,20 +159,20 @@ onMounted(() => {
 <template>
   <div class="server-groups-page">
     <div class="page-header">
-      <span class="page-title">服务器分组</span>
+      <span class="page-title">{{ t('服务器分组') }}</span>
       <div class="header-actions">
-        <button class="btn-primary" @click="handleCreate()">新建分组</button>
+        <button class="btn-primary" @click="handleCreate()">{{ t('新建分组') }}</button>
       </div>
     </div>
 
     <div class="page-content">
       <div class="group-tree">
         <div class="tree-header">
-          <span>分组列表</span>
+          <span>{{ t('分组列表') }}</span>
         </div>
         <div class="tree-content">
-          <div v-if="loading" class="loading-state">加载中...</div>
-          <div v-else-if="groups.length === 0" class="empty-state">暂无分组</div>
+          <div v-if="loading" class="loading-state">{{ t('加载中...') }}</div>
+          <div v-else-if="groups.length === 0" class="empty-state">{{ t('暂无分组') }}</div>
           <div v-else class="group-list">
             <template v-for="group in groups" :key="group.id">
               <div 
@@ -178,12 +181,12 @@ onMounted(() => {
               >
                 <div class="group-info">
                   <span class="group-name">{{ group.name }}</span>
-                  <span class="group-desc">{{ group.description || '暂无描述' }}</span>
+                  <span class="group-desc">{{ group.description || t('暂无描述') }}</span>
                 </div>
                 <div class="group-actions">
-                  <button class="btn-link" @click.stop="handleCreate(group.id)">添加子分组</button>
-                  <button class="btn-link" @click.stop="handleEdit(group)">编辑</button>
-                  <button class="btn-link danger" @click.stop="handleDelete(group)">删除</button>
+                  <button class="btn-link" @click.stop="handleCreate(group.id)">{{ t('添加子分组') }}</button>
+                  <button class="btn-link" @click.stop="handleEdit(group)">{{ t('编辑') }}</button>
+                  <button class="btn-link danger" @click.stop="handleDelete(group)">{{ t('删除') }}</button>
                 </div>
               </div>
               <template v-if="group.children && group.children.length > 0">
@@ -195,11 +198,11 @@ onMounted(() => {
                 >
                   <div class="group-info">
                     <span class="group-name">{{ child.name }}</span>
-                    <span class="group-desc">{{ child.description || '暂无描述' }}</span>
+                    <span class="group-desc">{{ child.description || t('暂无描述') }}</span>
                   </div>
                   <div class="group-actions">
-                    <button class="btn-link" @click.stop="handleEdit(child)">编辑</button>
-                    <button class="btn-link danger" @click.stop="handleDelete(child)">删除</button>
+                    <button class="btn-link" @click.stop="handleEdit(child)">{{ t('编辑') }}</button>
+                    <button class="btn-link danger" @click.stop="handleDelete(child)">{{ t('删除') }}</button>
                   </div>
                 </div>
               </template>
@@ -210,46 +213,46 @@ onMounted(() => {
 
       <div class="group-detail">
         <div v-if="!selectedGroup" class="empty-detail">
-          <span>请选择一个分组查看详情</span>
+          <span>{{ t('请选择分组') }}</span>
         </div>
         <template v-else>
           <div class="detail-header">
             <span class="detail-title">{{ selectedGroup.name }}</span>
-            <span class="detail-desc">{{ selectedGroup.description || '暂无描述' }}</span>
+            <span class="detail-desc">{{ selectedGroup.description || t('暂无描述') }}</span>
           </div>
           
           <div class="detail-section">
             <div class="section-header">
-              <span>分组内服务器 ({{ groupServers.length }})</span>
+              <span>{{ t('分组服务器') }} ({{ groupServers.length }})</span>
             </div>
             <div class="server-list">
               <div v-if="groupServers.length === 0" class="empty-servers">
-                该分组暂无服务器
+                {{ t('分组暂无服务器') }}
               </div>
               <div v-for="server in groupServers" :key="server.id" class="server-item">
                 <div class="server-info">
                   <span class="server-name">{{ server.name }}</span>
                   <span class="server-ip">{{ server.ip }}:{{ server.port }}</span>
                 </div>
-                <button class="btn-link danger" @click="handleRemoveServer(server)">移除</button>
+                <button class="btn-link danger" @click="handleRemoveServer(server)">{{ t('移除') }}</button>
               </div>
             </div>
           </div>
 
           <div class="detail-section">
             <div class="section-header">
-              <span>可添加服务器</span>
+              <span>{{ t('可用服务器') }}</span>
             </div>
             <div class="server-list">
               <div v-if="availableServers.length === 0" class="empty-servers">
-                暂无可添加的服务器
+                {{ t('暂无可用服务器') }}
               </div>
               <div v-for="server in availableServers" :key="server.id" class="server-item">
                 <div class="server-info">
                   <span class="server-name">{{ server.name }}</span>
                   <span class="server-ip">{{ server.ip }}:{{ server.port }}</span>
                 </div>
-                <button class="btn-link" @click="handleAddServer(server)">添加</button>
+                <button class="btn-link" @click="handleAddServer(server)">{{ t('添加') }}</button>
               </div>
             </div>
           </div>
@@ -265,17 +268,17 @@ onMounted(() => {
         </div>
         <div class="dialog-body">
           <div class="form-group">
-            <label class="form-label">名称</label>
-            <input v-model="form.name" class="form-input" placeholder="请输入分组名称" />
+            <label class="form-label">{{ t('分组名称') }}</label>
+            <input v-model="form.name" class="form-input" :placeholder="t('请输入分组名称')" />
           </div>
           <div class="form-group">
-            <label class="form-label">描述</label>
-            <textarea v-model="form.description" class="form-textarea" rows="3" placeholder="请输入分组描述"></textarea>
+            <label class="form-label">{{ t('描述') }}</label>
+            <textarea v-model="form.description" class="form-textarea" rows="3" :placeholder="t('请输入描述')"></textarea>
           </div>
         </div>
         <div class="dialog-footer">
-          <button class="btn-secondary" @click="dialogVisible = false">取消</button>
-          <button class="btn-primary" @click="handleSubmit">确定</button>
+          <button class="btn-secondary" @click="dialogVisible = false">{{ t('取消') }}</button>
+          <button class="btn-primary" @click="handleSubmit">{{ t('确认') }}</button>
         </div>
       </div>
     </div>

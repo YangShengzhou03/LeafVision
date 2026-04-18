@@ -1,14 +1,16 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Refresh, Plus, Search } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getUserList, createUser, updateUser, deleteUser, getRoles } from '@/api'
 
+const { t } = useI18n()
 const loading = ref(false)
 const userList = ref([])
 const searchQuery = ref('')
 const showModal = ref(false)
-const modalTitle = ref('添加用户')
+const modalTitle = ref('')
 const formData = ref({
   id: null,
   username: '',
@@ -22,10 +24,14 @@ const formData = ref({
 
 const roleOptions = ref([])
 
-const statusOptions = [
-  { label: '启用', value: 1 },
-  { label: '禁用', value: 0 }
-]
+const statusOptions = ref([])
+
+const initOptions = () => {
+  statusOptions.value = [
+    { label: t('启用'), value: 1 },
+    { label: t('禁用'), value: 0 }
+  ]
+}
 
 const fetchRoles = async () => {
   try {
@@ -70,32 +76,32 @@ const applySearch = () => {
 }
 
 const handleAdd = () => {
-  modalTitle.value = '添加用户'
+  modalTitle.value = t('添加用户')
   formData.value = { id: null, username: '', password: '', name: '', email: '', phone: '', roleId: roleOptions.value[0]?.value || null, status: 1 }
   showModal.value = true
 }
 
 const handleEdit = (user) => {
-  modalTitle.value = '编辑用户'
+  modalTitle.value = t('编辑用户')
   formData.value = { ...user }
   showModal.value = true
 }
 
 const handleDelete = async (user) => {
   try {
-    await ElMessageBox.confirm(`确定删除用户 ${user.name}？`, '确认删除', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(t('确定删除用户吗？'), t('提示'), {
+      confirmButtonText: t('确认'),
+      cancelButtonText: t('取消'),
       type: 'warning'
     })
     const res = await deleteUser(user.id)
     if (res.code === 200) {
-      ElMessage.success('删除成功')
+      ElMessage.success(t('删除成功'))
       fetchUserList()
     }
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('删除失败')
+      ElMessage.error(t('删除失败'))
     }
   }
 }
@@ -106,12 +112,12 @@ const handleSubmit = async () => {
       ? await updateUser(formData.value)
       : await createUser(formData.value)
     if (res.code === 200) {
-      ElMessage.success(formData.value.id ? '更新成功' : '创建成功')
+      ElMessage.success(formData.value.id ? t('更新成功') : t('添加成功'))
       showModal.value = false
       fetchUserList()
     }
   } catch (error) {
-    ElMessage.error('操作失败')
+    ElMessage.error(t('操作失败'))
   }
 }
 
@@ -125,7 +131,7 @@ const getStatusClass = (status) => {
 }
 
 const getStatusText = (status) => {
-  return status === 1 ? '启用' : '禁用'
+  return status === 1 ? t('启用') : t('禁用')
 }
 
 const formatDateTime = (dateStr) => {
@@ -134,6 +140,7 @@ const formatDateTime = (dateStr) => {
 }
 
 onMounted(async () => {
+  initOptions()
   await fetchRoles()
   await fetchUserList()
   applySearch()
@@ -143,15 +150,15 @@ onMounted(async () => {
 <template>
   <div class="users-page">
     <div class="page-header">
-      <span class="page-title">用户管理</span>
+      <span class="page-title">{{ t('用户管理') }}</span>
       <div class="header-actions">
         <button class="btn-secondary" @click="fetchUserList" :disabled="loading">
           <el-icon><Refresh /></el-icon>
-          <span>刷新</span>
+          <span>{{ t('刷新') }}</span>
         </button>
         <button class="btn-primary" @click="handleAdd">
           <el-icon><Plus /></el-icon>
-          <span>添加用户</span>
+          <span>{{ t('添加用户') }}</span>
         </button>
       </div>
     </div>
@@ -162,7 +169,7 @@ onMounted(async () => {
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="搜索用户名或邮箱"
+          :placeholder="t('搜索用户名或邮箱')"
           class="search-input"
           @input="applySearch"
         />
@@ -173,13 +180,13 @@ onMounted(async () => {
       <table class="data-table">
         <thead>
           <tr>
-            <th>用户</th>
-            <th>邮箱</th>
-            <th>角色</th>
-            <th>状态</th>
-            <th>创建时间</th>
-            <th>最后登录</th>
-            <th>操作</th>
+            <th>{{ t('用户') }}</th>
+            <th>{{ t('邮箱') }}</th>
+            <th>{{ t('角色') }}</th>
+            <th>{{ t('状态') }}</th>
+            <th>{{ t('创建时间') }}</th>
+            <th>{{ t('最后登录') }}</th>
+            <th>{{ t('操作') }}</th>
           </tr>
         </thead>
         <tbody v-if="!loading">
@@ -203,15 +210,15 @@ onMounted(async () => {
             <td>{{ formatDateTime(user.lastLogin) }}</td>
             <td>
               <div class="action-btns">
-                <button class="btn-link" @click="handleEdit(user)">编辑</button>
-                <button class="btn-link danger" @click="handleDelete(user)">删除</button>
+                <button class="btn-link" @click="handleEdit(user)">{{ t('编辑') }}</button>
+                <button class="btn-link danger" @click="handleDelete(user)">{{ t('删除') }}</button>
               </div>
             </td>
           </tr>
         </tbody>
         <tbody v-else>
           <tr>
-            <td colspan="7" class="loading-cell">加载中...</td>
+            <td colspan="7" class="loading-cell">{{ t('加载中...') }}</td>
           </tr>
         </tbody>
       </table>
@@ -225,23 +232,23 @@ onMounted(async () => {
         </div>
         <div class="modal-body">
           <div class="form-group">
-            <label class="form-label">登录账号</label>
-            <input v-model="formData.username" type="text" class="form-input" placeholder="输入登录账号" />
+            <label class="form-label">{{ t('用户名') }}</label>
+            <input v-model="formData.username" type="text" class="form-input" :placeholder="t('用户名占位符')" />
           </div>
           <div v-if="!formData.id" class="form-group">
-            <label class="form-label">密码</label>
-            <input v-model="formData.password" type="password" class="form-input" placeholder="输入密码" />
+            <label class="form-label">{{ t('密码') }}</label>
+            <input v-model="formData.password" type="password" class="form-input" :placeholder="t('密码占位符')" />
           </div>
           <div class="form-group">
-            <label class="form-label">姓名</label>
-            <input v-model="formData.name" type="text" class="form-input" placeholder="输入姓名" />
+            <label class="form-label">{{ t('姓名') }}</label>
+            <input v-model="formData.name" type="text" class="form-input" :placeholder="t('姓名占位符')" />
           </div>
           <div class="form-group">
-            <label class="form-label">邮箱</label>
-            <input v-model="formData.email" type="email" class="form-input" placeholder="输入邮箱" />
+            <label class="form-label">{{ t('邮箱') }}</label>
+            <input v-model="formData.email" type="email" class="form-input" :placeholder="t('邮箱占位符')" />
           </div>
           <div class="form-group">
-            <label class="form-label">角色</label>
+            <label class="form-label">{{ t('角色') }}</label>
             <select v-model="formData.roleId" class="form-select">
               <option v-for="item in roleOptions" :key="item.value" :value="item.value">
                 {{ item.label }}
@@ -249,7 +256,7 @@ onMounted(async () => {
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">状态</label>
+            <label class="form-label">{{ t('状态') }}</label>
             <select v-model="formData.status" class="form-select">
               <option v-for="item in statusOptions" :key="item.value" :value="item.value">
                 {{ item.label }}
@@ -258,8 +265,8 @@ onMounted(async () => {
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn-secondary" @click="showModal = false">取消</button>
-          <button class="btn-primary" @click="handleSubmit">确定</button>
+          <button class="btn-secondary" @click="showModal = false">{{ t('取消') }}</button>
+          <button class="btn-primary" @click="handleSubmit">{{ t('确认') }}</button>
         </div>
       </div>
     </div>

@@ -1,14 +1,17 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Refresh, Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getRoles, createRole, updateRole, deleteRole, getPermissions } from '@/api'
+
+const { t } = useI18n()
 
 const loading = ref(false)
 const roleList = ref([])
 const permissionList = ref([])
 const showModal = ref(false)
-const modalTitle = ref('添加角色')
+const modalTitle = ref('')
 const formData = ref({
   id: null,
   roleCode: '',
@@ -44,43 +47,43 @@ const fetchPermissions = async () => {
 }
 
 const handleAdd = () => {
-  modalTitle.value = '添加角色'
+  modalTitle.value = t('添加角色')
   formData.value = { id: null, roleCode: '', roleName: '', description: '', permissions: [], status: 1 }
   showModal.value = true
 }
 
 const handleEdit = (role) => {
-  modalTitle.value = '编辑角色'
+  modalTitle.value = t('编辑角色')
   formData.value = { ...role }
   showModal.value = true
 }
 
 const handleDelete = async (role) => {
   if (role.roleCode === 'ADMIN') {
-    ElMessage.warning('系统管理员角色不可删除')
+    ElMessage.warning(t('管理员角色不可删除'))
     return
   }
   try {
-    await ElMessageBox.confirm(`确定删除角色 ${role.roleName}？`, '确认删除', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(t('确定删除角色', { name: role.roleName }), t('确认删除'), {
+      confirmButtonText: t('确认'),
+      cancelButtonText: t('取消'),
       type: 'warning'
     })
     const res = await deleteRole(role.id)
     if (res.code === 200) {
-      ElMessage.success('删除成功')
+      ElMessage.success(t('删除成功'))
       fetchRoles()
     }
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('删除失败')
+      ElMessage.error(t('删除失败'))
     }
   }
 }
 
 const handleSubmit = async () => {
   if (!formData.value.roleCode || !formData.value.roleName) {
-    ElMessage.warning('请填写角色编码和角色名称')
+    ElMessage.warning(t('请填写必填项'))
     return
   }
   try {
@@ -88,12 +91,12 @@ const handleSubmit = async () => {
       ? await updateRole(formData.value)
       : await createRole(formData.value)
     if (res.code === 200) {
-      ElMessage.success(formData.value.id ? '更新成功' : '创建成功')
+      ElMessage.success(formData.value.id ? t('更新成功') : t('创建成功'))
       showModal.value = false
       fetchRoles()
     }
   } catch (error) {
-    ElMessage.error('操作失败')
+    ElMessage.error(t('操作失败'))
   }
 }
 
@@ -102,7 +105,7 @@ const getStatusClass = (status) => {
 }
 
 const getStatusText = (status) => {
-  return status === 1 ? '启用' : '禁用'
+  return status === 1 ? t('启用') : t('禁用')
 }
 
 const formatDateTime = (dateStr) => {
@@ -119,15 +122,15 @@ onMounted(() => {
 <template>
   <div class="roles-page">
     <div class="page-header">
-      <span class="page-title">角色管理</span>
+      <span class="page-title">{{ t('角色管理') }}</span>
       <div class="header-actions">
         <button class="btn-secondary" @click="fetchRoles" :disabled="loading">
           <el-icon><Refresh /></el-icon>
-          <span>刷新</span>
+          <span>{{ t('刷新') }}</span>
         </button>
         <button class="btn-primary" @click="handleAdd">
           <el-icon><Plus /></el-icon>
-          <span>添加角色</span>
+          <span>{{ t('添加角色') }}</span>
         </button>
       </div>
     </div>
@@ -136,13 +139,13 @@ onMounted(() => {
       <table class="data-table">
         <thead>
           <tr>
-            <th>角色编码</th>
-            <th>角色名称</th>
-            <th>描述</th>
-            <th>权限数量</th>
-            <th>状态</th>
-            <th>创建时间</th>
-            <th>操作</th>
+            <th>{{ t('角色编码') }}</th>
+            <th>{{ t('角色名称') }}</th>
+            <th>{{ t('描述') }}</th>
+            <th>{{ t('权限数量') }}</th>
+            <th>{{ t('状态') }}</th>
+            <th>{{ t('创建时间') }}</th>
+            <th>{{ t('操作') }}</th>
           </tr>
         </thead>
         <tbody v-if="!loading">
@@ -159,19 +162,19 @@ onMounted(() => {
             <td>{{ formatDateTime(role.createdAt) }}</td>
             <td>
               <div class="action-btns">
-                <button class="btn-link" @click="handleEdit(role)">编辑</button>
+                <button class="btn-link" @click="handleEdit(role)">{{ t('编辑') }}</button>
                 <button 
                   class="btn-link danger" 
                   @click="handleDelete(role)"
                   :disabled="role.roleCode === 'ADMIN'"
-                >删除</button>
+                >{{ t('删除') }}</button>
               </div>
             </td>
           </tr>
         </tbody>
         <tbody v-else>
           <tr>
-            <td colspan="7" class="loading-cell">加载中...</td>
+            <td colspan="7" class="loading-cell">{{ t('加载中...') }}</td>
           </tr>
         </tbody>
       </table>
@@ -185,25 +188,25 @@ onMounted(() => {
         </div>
         <div class="modal-body">
           <div class="form-group">
-            <label class="form-label">角色编码</label>
+            <label class="form-label">{{ t('角色编码') }}</label>
             <input 
               v-model="formData.roleCode" 
               type="text" 
               class="form-input" 
-              placeholder="大写字母，如 DEVELOPER"
+              :placeholder="t('请输入角色编码')"
               :disabled="!!formData.id"
             />
           </div>
           <div class="form-group">
-            <label class="form-label">角色名称</label>
-            <input v-model="formData.roleName" type="text" class="form-input" placeholder="输入角色名称" />
+            <label class="form-label">{{ t('角色名称') }}</label>
+            <input v-model="formData.roleName" type="text" class="form-input" :placeholder="t('请输入角色名称')" />
           </div>
           <div class="form-group">
-            <label class="form-label">描述</label>
-            <input v-model="formData.description" type="text" class="form-input" placeholder="输入角色描述" />
+            <label class="form-label">{{ t('描述') }}</label>
+            <input v-model="formData.description" type="text" class="form-input" :placeholder="t('请输入描述')" />
           </div>
           <div class="form-group">
-            <label class="form-label">分配权限</label>
+            <label class="form-label">{{ t('分配权限') }}</label>
             <div class="permission-list">
               <label 
                 v-for="perm in permissionList" 
@@ -220,16 +223,16 @@ onMounted(() => {
             </div>
           </div>
           <div class="form-group">
-            <label class="form-label">状态</label>
+            <label class="form-label">{{ t('状态') }}</label>
             <select v-model="formData.status" class="form-select">
-              <option :value="1">启用</option>
-              <option :value="0">禁用</option>
+              <option :value="1">{{ t('启用') }}</option>
+              <option :value="0">{{ t('禁用') }}</option>
             </select>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn-secondary" @click="showModal = false">取消</button>
-          <button class="btn-primary" @click="handleSubmit">确定</button>
+          <button class="btn-secondary" @click="showModal = false">{{ t('取消') }}</button>
+          <button class="btn-primary" @click="handleSubmit">{{ t('确认') }}</button>
         </div>
       </div>
     </div>

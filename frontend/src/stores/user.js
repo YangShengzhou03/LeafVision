@@ -33,7 +33,13 @@ export const useUserStore = defineStore('user', () => {
 
       return { success: true, user: userData }
     } catch (error) {
-      return { success: false, message: '网络错误，请稍后重试' }
+      if (error.response?.status === 401) {
+        return { success: false, message: '用户名或密码错误' }
+      }
+      if (!error.response) {
+        return { success: false, message: '无法连接到服务器，请检查后端服务是否启动' }
+      }
+      return { success: false, message: error.response?.data?.message || '登录失败' }
     }
   }
 

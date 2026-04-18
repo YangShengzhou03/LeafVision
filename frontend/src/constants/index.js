@@ -1,7 +1,8 @@
 export const SERVER_TYPES = [
   { value: 'prometheus-master', label: 'Prometheus 主节点' },
   { value: 'prometheus-node', label: 'Prometheus 从节点' },
-  { value: 'alertmanager', label: 'Alertmanager' }
+  { value: 'alertmanager', label: 'Alertmanager' },
+  { value: 'docker', label: 'Docker 主机' }
 ]
 
 export const METRIC_OPTIONS = [

@@ -1,9 +1,11 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { forgotPassword } from '@/api'
 
+const { t } = useI18n()
 const router = useRouter()
 const loading = ref(false)
 const step = ref(1)
@@ -14,8 +16,8 @@ const form = reactive({
 
 const rules = {
   email: [
-    { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' }
+    { required: true, message: t('forgotPassword.emailRequired'), trigger: 'blur' },
+    { type: 'email', message: t('forgotPassword.emailInvalid'), trigger: 'blur' }
   ]
 }
 
@@ -31,9 +33,9 @@ const handleSubmit = async () => {
     try {
       await forgotPassword({ email: form.email })
       step.value = 2
-      ElMessage.success('重置链接已发送到您的邮箱')
+      ElMessage.success(t('forgotPassword.sendSuccess'))
     } catch (error) {
-      ElMessage.error(error.response?.data?.message || '发送失败，请稍后重试')
+      ElMessage.error(error.response?.data?.message || t('forgotPassword.sendFailed'))
     } finally {
       loading.value = false
     }
@@ -52,8 +54,8 @@ const handleBackHome = () => router.push('/')
       </div>
       <div class="left-content">
         <span class="left-tag">ACCOUNT RECOVERY</span>
-        <h2>重置<br/>密码</h2>
-        <p>通过邮箱验证恢复您的账户访问</p>
+        <h2>{{ t('forgotPassword.leftTitle1') }}<br/>{{ t('forgotPassword.leftTitle2') }}</h2>
+        <p>{{ t('forgotPassword.leftDesc') }}</p>
       </div>
     </div>
 
@@ -61,8 +63,8 @@ const handleBackHome = () => router.push('/')
       <div class="forgot-form-wrapper">
         <template v-if="step === 1">
           <div class="form-header">
-            <h1>忘记密码</h1>
-            <p>请输入您的注册邮箱，我们将发送重置链接</p>
+            <h1>{{ t('forgotPassword.title') }}</h1>
+            <p>{{ t('forgotPassword.subtitle') }}</p>
           </div>
 
           <el-form
@@ -73,10 +75,10 @@ const handleBackHome = () => router.push('/')
             @submit.prevent="handleSubmit"
           >
             <el-form-item prop="email">
-              <div class="field-label">邮箱地址</div>
+              <div class="field-label">{{ t('forgotPassword.emailAddress') }}</div>
               <el-input
                 v-model="form.email"
-                placeholder="请输入注册时使用的邮箱"
+                :placeholder="t('forgotPassword.emailPlaceholder')"
                 clearable
                 @keyup.enter="handleSubmit"
               />
@@ -89,7 +91,7 @@ const handleBackHome = () => router.push('/')
                 :disabled="loading"
                 @click="handleSubmit"
               >
-                {{ loading ? '发送中...' : '发送重置链接' }}
+                {{ loading ? t('forgotPassword.sending') : t('forgotPassword.sendResetLink') }}
               </button>
             </el-form-item>
           </el-form>
@@ -103,20 +105,20 @@ const handleBackHome = () => router.push('/')
                 <path d="M14 24L22 32L34 16" stroke="#1c69d4" stroke-width="2"/>
               </svg>
             </div>
-            <h2>邮件已发送</h2>
-            <p>重置链接已发送至 <strong>{{ form.email }}</strong>，请查收邮件并按照提示重置密码。</p>
+            <h2>{{ t('forgotPassword.emailSent') }}</h2>
+            <p>{{ t('forgotPassword.emailSentDesc', { email: form.email }) }}</p>
             <button
               type="button"
               class="btn-submit"
               @click="step = 1"
             >
-              重新发送
+              {{ t('forgotPassword.resend') }}
             </button>
           </div>
         </template>
 
         <div class="form-footer">
-          <router-link to="/login" class="back-link">返回登录</router-link>
+          <router-link to="/login" class="back-link">{{ t('forgotPassword.backToLogin') }}</router-link>
         </div>
       </div>
     </div>

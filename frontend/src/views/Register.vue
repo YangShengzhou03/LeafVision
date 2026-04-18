@@ -1,9 +1,11 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { register } from '@/api'
 
+const { t } = useI18n()
 const router = useRouter()
 const loading = ref(false)
 const showPassword = ref(false)
@@ -18,7 +20,7 @@ const form = reactive({
 
 const validateConfirmPassword = (rule, value, callback) => {
   if (value !== form.password) {
-    callback(new Error('两次输入的密码不一致'))
+    callback(new Error(t('两次密码不一致')))
   } else {
     callback()
   }
@@ -26,15 +28,15 @@ const validateConfirmPassword = (rule, value, callback) => {
 
 const rules = {
   email: [
-    { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' }
+    { required: true, message: t('请输入邮箱'), trigger: 'blur' },
+    { type: 'email', message: t('请输入有效邮箱'), trigger: 'blur' }
   ],
   password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, max: 20, message: '密码长度 6-20 个字符', trigger: 'blur' }
+    { required: true, message: t('请输入密码'), trigger: 'blur' },
+    { min: 6, max: 20, message: t('密码长度6-20个字符'), trigger: 'blur' }
   ],
   confirmPassword: [
-    { required: true, message: '请确认密码', trigger: 'blur' },
+    { required: true, message: t('请确认密码'), trigger: 'blur' },
     { validator: validateConfirmPassword, trigger: 'blur' }
   ]
 }
@@ -48,7 +50,7 @@ const handleRegister = async () => {
     if (!valid) return
 
     if (!form.agree) {
-      ElMessage.warning('请先同意服务条款')
+      ElMessage.warning(t('请先同意条款'))
       return
     }
 
@@ -58,10 +60,10 @@ const handleRegister = async () => {
         email: form.email,
         password: form.password
       })
-      ElMessage.success('注册成功，请登录')
+      ElMessage.success(t('注册成功'))
       router.push('/login')
     } catch (error) {
-      ElMessage.error(error.response?.data?.message || '注册失败，请稍后重试')
+      ElMessage.error(error.response?.data?.message || t('注册失败'))
     } finally {
       loading.value = false
     }
@@ -80,20 +82,20 @@ const handleBackHome = () => router.push('/')
       </div>
       <div class="left-content">
         <span class="left-tag">GET STARTED</span>
-        <h2>开启<br/>可观测之旅</h2>
-        <p>注册即可免费体验企业级基础设施监控</p>
+        <h2>{{ t('开启您的') }}<br/>{{ t('可观测性之旅') }}</h2>
+        <p>{{ t('注册说明') }}</p>
         <div class="left-features">
           <div class="left-feature">
             <span class="feature-line"></span>
-            <span>实时监控与告警</span>
+            <span>{{ t('功能1') }}</span>
           </div>
           <div class="left-feature">
             <span class="feature-line"></span>
-            <span>多维度指标分析</span>
+            <span>{{ t('功能2') }}</span>
           </div>
           <div class="left-feature">
             <span class="feature-line"></span>
-            <span>分布式链路追踪</span>
+            <span>{{ t('功能3') }}</span>
           </div>
         </div>
       </div>
@@ -102,8 +104,8 @@ const handleBackHome = () => router.push('/')
     <div class="register-right">
       <div class="register-form-wrapper">
         <div class="form-header">
-          <h1>创建账户</h1>
-          <p>填写以下信息完成注册</p>
+          <h1>{{ t('创建账户') }}</h1>
+          <p>{{ t('填写以下信息注册') }}</p>
         </div>
 
         <el-form
@@ -114,38 +116,38 @@ const handleBackHome = () => router.push('/')
           @submit.prevent="handleRegister"
         >
           <el-form-item prop="email">
-            <div class="field-label">邮箱</div>
+            <div class="field-label">{{ t('邮箱') }}</div>
             <el-input
               v-model="form.email"
-              placeholder="请输入邮箱地址"
+              :placeholder="t('邮箱占位符')"
               clearable
             />
           </el-form-item>
 
           <el-form-item prop="password">
-            <div class="field-label">密码</div>
+            <div class="field-label">{{ t('密码') }}</div>
             <el-input
               v-model="form.password"
               :type="showPassword ? 'text' : 'password'"
-              placeholder="请输入密码（6-20个字符）"
+              :placeholder="t('密码占位符')"
             >
               <template #suffix>
                 <span
                   class="password-toggle"
                   @click="showPassword = !showPassword"
                 >
-                  {{ showPassword ? '隐藏' : '显示' }}
+                  {{ showPassword ? t('隐藏') : t('显示') }}
                 </span>
               </template>
             </el-input>
           </el-form-item>
 
           <el-form-item prop="confirmPassword">
-            <div class="field-label">确认密码</div>
+            <div class="field-label">{{ t('确认密码') }}</div>
             <el-input
               v-model="form.confirmPassword"
               :type="showConfirmPassword ? 'text' : 'password'"
-              placeholder="请再次输入密码"
+              :placeholder="t('确认密码占位符')"
               @keyup.enter="handleRegister"
             >
               <template #suffix>
@@ -153,7 +155,7 @@ const handleBackHome = () => router.push('/')
                   class="password-toggle"
                   @click="showConfirmPassword = !showConfirmPassword"
                 >
-                  {{ showConfirmPassword ? '隐藏' : '显示' }}
+                  {{ showConfirmPassword ? t('隐藏') : t('显示') }}
                 </span>
               </template>
             </el-input>
@@ -161,7 +163,7 @@ const handleBackHome = () => router.push('/')
 
           <div class="form-agree">
             <el-checkbox v-model="form.agree">
-              我已阅读并同意服务条款和隐私政策
+              {{ t('同意条款') }}
             </el-checkbox>
           </div>
 
@@ -172,14 +174,14 @@ const handleBackHome = () => router.push('/')
               :disabled="loading"
               @click="handleRegister"
             >
-              {{ loading ? '注册中...' : '注 册' }}
+              {{ loading ? t('注册中...') : t('注册') }}
             </button>
           </el-form-item>
         </el-form>
 
         <div class="form-footer">
-          <span>已有账户？</span>
-          <router-link to="/login" class="login-link">立即登录</router-link>
+          <span>{{ t('已有账户？') }}</span>
+          <router-link to="/login" class="login-link">{{ t('立即登录') }}</router-link>
         </div>
       </div>
     </div>

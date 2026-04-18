@@ -7,6 +7,7 @@ import com.leafvision.service.AuditLogService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
@@ -33,6 +34,61 @@ public class UserController {
             return Result.error(404, "用户不存在");
         }
         return Result.success(user);
+    }
+
+    @GetMapping("/me")
+    public Result<User> getCurrentUser(@RequestParam String username) {
+        if (username == null || username.isEmpty()) {
+            return Result.error(401, "未登录");
+        }
+        User user = userService.getUserByUsername(username);
+        if (user == null) {
+            return Result.error(404, "用户不存在");
+        }
+        user.setPassword(null);
+        return Result.success(user);
+    }
+
+    @PutMapping("/me")
+    public Result<User> updateCurrentUser(@RequestBody Map<String, Object> data) {
+        String username = (String) data.get("username");
+        if (username == null || username.isEmpty()) {
+            return Result.error(401, "未登录");
+        }
+        User user = userService.getUserByUsername(username);
+        if (user == null) {
+            return Result.error(404, "用户不存在");
+        }
+        if (data.get("name") != null) {
+            user.setName((String) data.get("name"));
+        }
+        if (data.get("email") != null) {
+            user.setEmail((String) data.get("email"));
+        }
+        if (data.get("phone") != null) {
+            user.setPhone((String) data.get("phone"));
+        }
+        User updated = userService.updateUser(user);
+        updated.setPassword(null);
+        return Result.success(updated);
+    }
+
+    @PutMapping("/me/password")
+    public Result<Void> changePassword(@RequestBody Map<String, String> passwordData) {
+        String username = passwordData.get("username");
+        if (username == null || username.isEmpty()) {
+            return Result.error(401, "未登录");
+        }
+        String currentPassword = passwordData.get("currentPassword");
+        String newPassword = passwordData.get("newPassword");
+        if (currentPassword == null || newPassword == null) {
+            return Result.error(400, "密码不能为空");
+        }
+        boolean success = userService.changePassword(username, currentPassword, newPassword);
+        if (success) {
+            return Result.success();
+        }
+        return Result.error(400, "当前密码错误");
     }
 
     @PostMapping

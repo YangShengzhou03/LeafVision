@@ -1,0 +1,23 @@
+export default {
+  '监控总览': 'Dashboard',
+  '实时监控': 'Realtime',
+  '主机管理': 'Servers',
+  '服务器分组': 'Server Groups',
+  '容器管理': 'Containers',
+  '服务管理': 'Services',
+  '指标检索': 'Metrics',
+  '日志查询': 'Logs',
+  '链路追踪': 'Traces',
+  '告警列表': 'Alerts',
+  '告警规则': 'Alert Rules',
+  '用户管理': 'Users',
+  '角色管理': 'Roles',
+  '权限配置': 'Permissions',
+  '审计日志': 'Audit Logs',
+  '系统设置': 'Settings',
+  '监控中心': 'Monitor Center',
+  '个人设置': 'Personal Settings',
+  '退出登录': 'Logout',
+  '确定要退出登录吗？': 'Are you sure you want to logout?',
+  '退出成功': 'Logged out successfully'
+}

@@ -1,8 +1,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Refresh } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getRoles, updateRolePermissions } from '@/api'
+
+const { t } = useI18n()
 
 const loading = ref(false)
 const roleList = ref([])
@@ -12,19 +15,19 @@ const permissionTree = ref([
     module: 'monitor',
     label: '监控中心',
     children: [
-      { key: 'DASHBOARD', label: '监控总览' },
+      { key: 'DASHBOARD', label: '仪表盘' },
       { key: 'REALTIME', label: '实时监控' },
-      { key: 'SERVERS', label: '主机管理' },
+      { key: 'SERVERS', label: '服务器管理' },
       { key: 'CONTAINERS', label: '容器管理' },
       { key: 'SERVICES', label: '服务管理' },
-      { key: 'METRICS', label: '指标检索' }
+      { key: 'METRICS', label: '指标查询' }
     ]
   },
   {
     module: 'observability',
     label: '可观测性',
     children: [
-      { key: 'LOGS', label: '日志查询' },
+      { key: 'LOGS', label: '日志管理' },
       { key: 'TRACES', label: '链路追踪' }
     ]
   },
@@ -42,7 +45,7 @@ const permissionTree = ref([
     children: [
       { key: 'USERS', label: '用户管理' },
       { key: 'ROLES', label: '角色管理' },
-      { key: 'PERMISSIONS', label: '权限配置' },
+      { key: 'PERMISSIONS', label: '权限管理' },
       { key: 'AUDIT_LOGS', label: '审计日志' },
       { key: 'SETTINGS', label: '系统设置' }
     ]
@@ -96,10 +99,10 @@ const handleSave = async () => {
   try {
     const res = await updateRolePermissions(selectedRole.value.id, selectedRole.value.permissions)
     if (res.code === 200) {
-      ElMessage.success('保存成功')
+      ElMessage.success(t('保存成功'))
     }
   } catch (error) {
-    ElMessage.error('保存失败')
+    ElMessage.error(t('保存失败'))
   }
 }
 
@@ -109,14 +112,14 @@ onMounted(() => fetchRoles())
 <template>
   <div class="permissions-page">
     <div class="page-header">
-      <span class="page-title">权限配置</span>
+      <span class="page-title">{{ t('权限管理') }}</span>
       <div class="header-actions">
         <button class="btn-secondary" @click="fetchRoles" :disabled="loading">
           <el-icon><Refresh /></el-icon>
-          <span>刷新</span>
+          <span>{{ t('刷新') }}</span>
         </button>
         <button class="btn-primary" @click="handleSave" :disabled="!selectedRole">
-          <span>保存配置</span>
+          <span>{{ t('保存配置') }}</span>
         </button>
       </div>
     </div>
@@ -124,7 +127,7 @@ onMounted(() => fetchRoles())
     <div class="content-grid">
       <div class="roles-card">
         <div class="card-header">
-          <span class="card-title">角色列表</span>
+          <span class="card-title">{{ t('角色列表') }}</span>
         </div>
         <div class="card-body">
           <div class="role-list">
@@ -143,14 +146,14 @@ onMounted(() => fetchRoles())
 
       <div class="permissions-card">
         <div class="card-header">
-          <span class="card-title">权限设置</span>
-          <span v-if="selectedRole" class="selected-role">当前角色: {{ selectedRole.roleName }}</span>
+          <span class="card-title">{{ t('权限设置') }}</span>
+          <span v-if="selectedRole" class="selected-role">{{ t('当前角色') }}: {{ selectedRole.roleName }}</span>
         </div>
         <div class="card-body">
           <div v-if="selectedRole" class="permission-tree">
             <div v-for="module in permissionTree" :key="module.module" class="permission-module">
               <div class="module-header">
-                <span class="module-label">{{ module.label }}</span>
+                <span class="module-label">{{ t(module.label) }}</span>
               </div>
               <div class="module-permissions">
                 <label
@@ -163,13 +166,13 @@ onMounted(() => fetchRoles())
                     :checked="hasPermission(perm.key)"
                     @change="e => handlePermissionChange(perm.key, e.target.checked)"
                   />
-                  <span class="permission-label">{{ perm.label }}</span>
+                  <span class="permission-label">{{ t(perm.label) }}</span>
                 </label>
               </div>
             </div>
           </div>
           <div v-else class="empty-state">
-            <span class="empty-text">请选择角色</span>
+            <span class="empty-text">{{ t('请选择角色') }}</span>
           </div>
         </div>
       </div>

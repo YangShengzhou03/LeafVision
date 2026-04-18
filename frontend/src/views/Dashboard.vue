@@ -1,42 +1,59 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
-import { LineChart, PieChart, GaugeChart } from 'echarts/charts'
+import { LineChart, GaugeChart } from 'echarts/charts'
 import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components'
 import VChart from 'vue-echarts'
-import { Refresh, TrendCharts, Cpu, Monitor, Connection } from '@element-plus/icons-vue'
+import { Refresh, TrendCharts, Cpu, Monitor } from '@element-plus/icons-vue'
 import { getDashboardData } from '@/api'
 import { ElMessage } from 'element-plus'
 import { generateTimeLabels, getProgressColor } from '@/utils'
 
-use([CanvasRenderer, LineChart, PieChart, GaugeChart, GridComponent, TooltipComponent, LegendComponent])
+use([CanvasRenderer, LineChart, GaugeChart, GridComponent, TooltipComponent, LegendComponent])
+
+const { t } = useI18n()
+
+const formatPercent = (value) => {
+  if (value == null) return '0.00'
+  return Number(value).toFixed(2)
+}
+
+const formatStatValue = (card) => {
+  if (card.value == null) return '0'
+  if (typeof card.value === 'string') {
+    return card.value
+  }
+  if (card.title?.includes('CPU') || card.title?.includes('内存') || card.title?.includes('使用率')) {
+    return formatPercent(card.value) + '%'
+  }
+  return String(card.value)
+}
 
 const statsCards = ref([])
 const serverList = ref([])
 const loading = ref(false)
 
-const cpuOption = ref({
+const cpuOption = computed(() => ({
   tooltip: { trigger: 'axis' },
   grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-  xAxis: { type: 'category', boundaryGap: false, data: [] },
+  xAxis: { type: 'category', boundaryGap: false, data: cpuOptionData.value.xAxisData },
   yAxis: { type: 'value', max: 100 },
-  series: [{ name: 'CPU使用率', type: 'line', smooth: true, symbol: 'none', areaStyle: { opacity: 0.2 }, lineStyle: { width: 2 }, data: [] }]
-})
+  series: [{ name: t('CPU 使用趋势'), type: 'line', smooth: true, symbol: 'none', areaStyle: { opacity: 0.2 }, lineStyle: { width: 2 }, data: cpuOptionData.value.seriesData }]
+}))
 
-const memoryOption = ref({
+const cpuOptionData = ref({ xAxisData: [], seriesData: [] })
+
+const memoryOption = computed(() => ({
   tooltip: { trigger: 'axis' },
   grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-  xAxis: { type: 'category', boundaryGap: false, data: [] },
+  xAxis: { type: 'category', boundaryGap: false, data: memoryOptionData.value.xAxisData },
   yAxis: { type: 'value', max: 100 },
-  series: [{ name: '内存使用率', type: 'line', smooth: true, symbol: 'none', areaStyle: { opacity: 0.2 }, lineStyle: { width: 2, color: '#67c23a' }, data: [] }]
-})
+  series: [{ name: t('内存使用趋势'), type: 'line', smooth: true, symbol: 'none', areaStyle: { opacity: 0.2 }, lineStyle: { width: 2, color: '#67c23a' }, data: memoryOptionData.value.seriesData }]
+}))
 
-const networkOption = ref({
-  tooltip: { trigger: 'item' },
-  legend: { bottom: '2%', left: 'center' },
-  series: [{ name: '网络流量', type: 'pie', radius: ['45%', '70%'], avoidLabelOverlap: false, itemStyle: { borderRadius: 0 }, label: { show: false }, emphasis: { label: { show: true, fontSize: 14, fontWeight: 'bold' } }, labelLine: { show: false }, data: [] }]
-})
+const memoryOptionData = ref({ xAxisData: [], seriesData: [] })
 
 const healthOption = computed(() => ({
   series: [{
@@ -49,7 +66,7 @@ const healthOption = computed(() => ({
     axisLabel: { fontSize: 10, distance: -35, formatter: (v) => v + '%' },
     title: { offsetCenter: [0, '28%'], fontSize: 14 },
     detail: { fontSize: 24, offsetCenter: [0, '0%'], valueAnimation: true, formatter: (v) => Math.round(v) + '%', color: 'auto' },
-    data: [{ value: serverList.value.filter(s => s.status === 'online').length / (serverList.value.length || 1) * 100, name: '健康度' }]
+    data: [{ value: serverList.value.filter(s => s.status === 'online').length / (serverList.value.length || 1) * 100, name: t('健康度评分') }]
   }]
 }))
 
@@ -62,14 +79,13 @@ const fetchDashboardData = async () => {
       statsCards.value = d.statsCards || []
       serverList.value = d.serverList || []
       if (d.cpuTrend?.length > 0) {
-        cpuOption.value.series[0].data = d.cpuTrend
-        cpuOption.value.xAxis.data = generateTimeLabels(d.cpuTrend.length)
+        cpuOptionData.value.seriesData = d.cpuTrend
+        cpuOptionData.value.xAxisData = generateTimeLabels(d.cpuTrend.length)
       }
       if (d.memoryTrend?.length > 0) {
-        memoryOption.value.series[0].data = d.memoryTrend
-        memoryOption.value.xAxis.data = generateTimeLabels(d.memoryTrend.length)
+        memoryOptionData.value.seriesData = d.memoryTrend
+        memoryOptionData.value.xAxisData = generateTimeLabels(d.memoryTrend.length)
       }
-      if (d.networkDistribution?.length > 0) networkOption.value.series[0].data = d.networkDistribution
     }
   } catch (error) {
     console.error(error)
@@ -78,9 +94,9 @@ const fetchDashboardData = async () => {
   }
 }
 
-const handleRefresh = () => { fetchDashboardData(); ElMessage.success('数据已刷新') }
+const handleRefresh = () => { fetchDashboardData(); ElMessage.success(t('数据已刷新')) }
 
-const icons = [Monitor, Cpu, Connection, TrendCharts]
+const icons = [Monitor, Cpu, TrendCharts]
 const iconColors = ['#1c69d4', '#67c23a', '#e6a23c', '#f56c6c']
 
 let refreshTimer = null
@@ -94,10 +110,10 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
     <div class="stats-row">
       <div v-for="(card, i) in statsCards" :key="card.title" class="stat-card">
         <div class="stat-icon" :style="{ background: iconColors[i % 4] }">
-          <el-icon :size="20"><component :is="icons[i]" /></el-icon>
+          <el-icon :size="20"><component :is="icons[i % 3]" /></el-icon>
         </div>
         <div class="stat-content">
-          <span class="stat-value">{{ card.value }}</span>
+          <span class="stat-value">{{ formatStatValue(card) }}</span>
           <span class="stat-label">{{ card.title }}</span>
         </div>
       </div>
@@ -108,10 +124,10 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
         <div class="charts-row">
           <div class="chart-card">
             <div class="card-header">
-              <span class="card-title">CPU 使用率趋势</span>
+              <span class="card-title">{{ t('CPU 使用趋势') }}</span>
               <button class="btn-refresh" @click="handleRefresh" :disabled="loading">
                 <el-icon><Refresh /></el-icon>
-                <span>刷新</span>
+                <span>{{ t('刷新') }}</span>
               </button>
             </div>
             <div class="card-body">
@@ -120,7 +136,7 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
           </div>
           <div class="chart-card">
             <div class="card-header">
-              <span class="card-title">内存使用率趋势</span>
+              <span class="card-title">{{ t('内存使用趋势') }}</span>
             </div>
             <div class="card-body">
               <v-chart :option="memoryOption" autoresize style="height: 240px" />
@@ -130,18 +146,18 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
 
         <div class="chart-card">
           <div class="card-header">
-            <span class="card-title">服务器状态</span>
+            <span class="card-title">{{ t('服务器状态') }}</span>
           </div>
           <div class="card-body">
             <table class="data-table">
               <thead>
                 <tr>
-                  <th>服务器</th>
-                  <th>状态</th>
-                  <th>CPU</th>
-                  <th>内存</th>
-                  <th>版本</th>
-                  <th>运行时间</th>
+                  <th>{{ t('服务器') }}</th>
+                  <th>{{ t('状态') }}</th>
+                  <th>{{ t('CPU') }}</th>
+                  <th>{{ t('内存') }}</th>
+                  <th>{{ t('版本') }}</th>
+                  <th>{{ t('运行时间') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -154,20 +170,20 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
                   </td>
                   <td>
                     <span :class="['status-badge', server.status === 'online' ? 'online' : 'offline']">
-                      {{ server.status === 'online' ? '在线' : '离线' }}
+                      {{ server.status === 'online' ? t('在线') : t('离线') }}
                     </span>
                   </td>
                   <td>
                     <div class="progress-bar">
                       <div class="progress-fill" :style="{ width: (server.cpuUsage || 0) + '%', background: getProgressColor(server.cpuUsage) }"></div>
                     </div>
-                    <span class="progress-text">{{ server.cpuUsage || 0 }}%</span>
+                    <span class="progress-text">{{ formatPercent(server.cpuUsage) }}%</span>
                   </td>
                   <td>
                     <div class="progress-bar">
                       <div class="progress-fill" :style="{ width: (server.memoryUsage || 0) + '%', background: getProgressColor(server.memoryUsage) }"></div>
                     </div>
-                    <span class="progress-text">{{ server.memoryUsage || 0 }}%</span>
+                    <span class="progress-text">{{ formatPercent(server.memoryUsage) }}%</span>
                   </td>
                   <td>{{ server.version }}</td>
                   <td>{{ server.uptime }}</td>
@@ -179,20 +195,12 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
       </div>
 
       <div class="side-section">
-        <div class="chart-card side-card">
+        <div class="chart-card side-card full-height">
           <div class="card-header">
-            <span class="card-title">系统健康度</span>
+            <span class="card-title">{{ t('系统健康度') }}</span>
           </div>
           <div class="card-body">
-            <v-chart :option="healthOption" autoresize style="height: 170px" />
-          </div>
-        </div>
-        <div class="chart-card side-card">
-          <div class="card-header">
-            <span class="card-title">网络流量分布</span>
-          </div>
-          <div class="card-body">
-            <v-chart :option="networkOption" autoresize style="height: 210px" />
+            <v-chart :option="healthOption" autoresize style="height: 280px" />
           </div>
         </div>
       </div>
@@ -327,10 +335,17 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
   display: flex;
   flex-direction: column;
   gap: 16px;
+  max-height: calc(100vh - 180px);
+  overflow: hidden;
 }
 
 .side-card .card-body {
   padding: 16px;
+}
+
+.full-height {
+  height: 100%;
+  overflow: auto;
 }
 
 .data-table {

@@ -1,14 +1,39 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Refresh, Plus, Search } from '@element-plus/icons-vue'
-import { getContainerList } from '@/api'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { 
+  getContainerList, 
+  startContainer, 
+  stopContainer, 
+  restartContainer, 
+  getContainerLogs,
+  createContainer
+} from '@/api'
 
+const { t } = useI18n()
 const loading = ref(false)
 const containerList = ref([])
 const searchQuery = ref('')
 const filterStatus = ref('all')
 
 const filteredContainers = ref([])
+
+const logDialogVisible = ref(false)
+const currentContainer = ref(null)
+const containerLogs = ref('')
+const logsLoading = ref(false)
+
+const createDialogVisible = ref(false)
+const createForm = ref({
+  name: '',
+  image: '',
+  ports: '',
+  env: '',
+  serverId: null
+})
+const createLoading = ref(false)
 
 const fetchContainerList = async () => {
   loading.value = true
@@ -42,30 +67,119 @@ const applyFilters = () => {
 
 const getStatusClass = (status) => {
   if (status === 'running') return 'running'
-  if (status === 'stopped') return 'stopped'
+  if (status === 'exited' || status === 'stopped') return 'stopped'
   return 'unknown'
 }
 
 const getStatusText = (status) => {
-  if (status === 'running') return '运行中'
-  if (status === 'stopped') return '已停止'
-  return '未知'
+  if (status === 'running') return t('运行中')
+  if (status === 'exited' || status === 'stopped') return t('已停止')
+  return t('未知')
 }
 
-const handleStart = (container) => {
-  console.log('Start container:', container.id)
+const handleStart = async (container) => {
+  try {
+    const res = await startContainer(container.id, container.serverId)
+    if (res.code === 200) {
+      ElMessage.success(t('启动成功'))
+      fetchContainerList()
+    } else {
+      ElMessage.error(res.message || t('启动失败'))
+    }
+  } catch (error) {
+    ElMessage.error(t('启动失败'))
+  }
 }
 
-const handleStop = (container) => {
-  console.log('Stop container:', container.id)
+const handleStop = async (container) => {
+  try {
+    await ElMessageBox.confirm(t('确定停止此容器吗？'), t('提示'), {
+      type: 'warning'
+    })
+    const res = await stopContainer(container.id, container.serverId)
+    if (res.code === 200) {
+      ElMessage.success(t('停止成功'))
+      fetchContainerList()
+    } else {
+      ElMessage.error(res.message || t('停止失败'))
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(t('停止失败'))
+    }
+  }
 }
 
-const handleRestart = (container) => {
-  console.log('Restart container:', container.id)
+const handleRestart = async (container) => {
+  try {
+    await ElMessageBox.confirm(t('确定重启此容器吗？'), t('提示'), {
+      type: 'warning'
+    })
+    const res = await restartContainer(container.id, container.serverId)
+    if (res.code === 200) {
+      ElMessage.success(t('重启成功'))
+      fetchContainerList()
+    } else {
+      ElMessage.error(res.message || t('重启失败'))
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(t('重启失败'))
+    }
+  }
 }
 
-const handleLogs = (container) => {
-  console.log('View logs:', container.id)
+const handleLogs = async (container) => {
+  currentContainer.value = container
+  logDialogVisible.value = true
+  logsLoading.value = true
+  containerLogs.value = ''
+  
+  try {
+    const res = await getContainerLogs(container.id, { tail: 200 })
+    if (res.code === 200 && res.data) {
+      containerLogs.value = res.data
+    } else {
+      containerLogs.value = t('暂无日志')
+    }
+  } catch (error) {
+    containerLogs.value = t('获取日志失败')
+  } finally {
+    logsLoading.value = false
+  }
+}
+
+const handleOpenCreate = () => {
+  createForm.value = {
+    name: '',
+    image: '',
+    ports: '',
+    env: '',
+    serverId: null
+  }
+  createDialogVisible.value = true
+}
+
+const handleCreate = async () => {
+  if (!createForm.value.name || !createForm.value.image) {
+    ElMessage.warning(t('请填写容器名称和镜像'))
+    return
+  }
+  createLoading.value = true
+  try {
+    const res = await createContainer(createForm.value)
+    if (res.code === 200) {
+      ElMessage.success(t('创建成功'))
+      createDialogVisible.value = false
+      fetchContainerList()
+    } else {
+      ElMessage.error(res.message || t('创建失败'))
+    }
+  } catch (error) {
+    ElMessage.error(t('创建失败'))
+  } finally {
+    createLoading.value = false
+  }
 }
 
 onMounted(() => fetchContainerList())
@@ -74,15 +188,15 @@ onMounted(() => fetchContainerList())
 <template>
   <div class="containers-page">
     <div class="page-header">
-      <span class="page-title">容器管理</span>
+      <span class="page-title">{{ t('容器管理') }}</span>
       <div class="header-actions">
         <button class="btn-secondary" @click="fetchContainerList" :disabled="loading">
           <el-icon><Refresh /></el-icon>
-          <span>刷新</span>
+          <span>{{ t('刷新') }}</span>
         </button>
-        <button class="btn-primary">
+        <button class="btn-primary" @click="handleOpenCreate">
           <el-icon><Plus /></el-icon>
-          <span>创建容器</span>
+          <span>{{ t('创建容器') }}</span>
         </button>
       </div>
     </div>
@@ -93,7 +207,7 @@ onMounted(() => fetchContainerList())
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="搜索容器名称或镜像"
+          :placeholder="t('搜索容器...')"
           class="search-input"
           @input="applyFilters"
         />
@@ -103,19 +217,19 @@ onMounted(() => fetchContainerList())
           :class="['filter-tab', { active: filterStatus === 'all' }]"
           @click="filterStatus = 'all'; applyFilters()"
         >
-          全部
+          {{ t('全部') }}
         </button>
         <button
           :class="['filter-tab', { active: filterStatus === 'running' }]"
           @click="filterStatus = 'running'; applyFilters()"
         >
-          运行中
+          {{ t('运行中') }}
         </button>
         <button
-          :class="['filter-tab', { active: filterStatus === 'stopped' }]"
-          @click="filterStatus = 'stopped'; applyFilters()"
+          :class="['filter-tab', { active: filterStatus === 'exited' }]"
+          @click="filterStatus = 'exited'; applyFilters()"
         >
-          已停止
+          {{ t('已停止') }}
         </button>
       </div>
     </div>
@@ -124,14 +238,14 @@ onMounted(() => fetchContainerList())
       <table class="data-table">
         <thead>
           <tr>
-            <th>容器名称</th>
-            <th>镜像</th>
-            <th>状态</th>
-            <th>CPU</th>
-            <th>内存</th>
-            <th>网络</th>
-            <th>端口映射</th>
-            <th>操作</th>
+            <th>{{ t('容器名称') }}</th>
+            <th>{{ t('镜像') }}</th>
+            <th>{{ t('状态') }}</th>
+            <th>{{ t('CPU') }}</th>
+            <th>{{ t('内存') }}</th>
+            <th>{{ t('网络') }}</th>
+            <th>{{ t('端口') }}</th>
+            <th>{{ t('操作') }}</th>
           </tr>
         </thead>
         <tbody v-if="!loading">
@@ -164,38 +278,81 @@ onMounted(() => fetchContainerList())
             <td>
               <div class="action-btns">
                 <button
-                  v-if="container.status === 'running'"
-                  class="btn-link"
-                  @click="handleStop(container)"
-                >
-                  停止
-                </button>
-                <button
-                  v-if="container.status === 'stopped'"
-                  class="btn-link"
+                  v-if="container.status === 'exited' || container.status === 'stopped'"
+                  class="btn-link success"
                   @click="handleStart(container)"
                 >
-                  启动
+                  {{ t('启动') }}
+                </button>
+                <button
+                  v-if="container.status === 'running'"
+                  class="btn-link warning"
+                  @click="handleStop(container)"
+                >
+                  {{ t('停止') }}
                 </button>
                 <button
                   v-if="container.status === 'running'"
                   class="btn-link"
                   @click="handleRestart(container)"
                 >
-                  重启
+                  {{ t('重启') }}
                 </button>
-                <button class="btn-link" @click="handleLogs(container)">日志</button>
+                <button class="btn-link" @click="handleLogs(container)">{{ t('日志') }}</button>
               </div>
             </td>
           </tr>
         </tbody>
         <tbody v-else>
           <tr>
-            <td colspan="8" class="loading-cell">加载中...</td>
+            <td colspan="8" class="loading-cell">{{ t('加载中...') }}</td>
           </tr>
         </tbody>
       </table>
     </div>
+
+    <el-dialog
+      v-model="logDialogVisible"
+      :title="currentContainer ? `${currentContainer.name} - ${t('日志')}` : t('容器日志')"
+      width="800px"
+      class="log-dialog"
+    >
+      <div class="log-content" v-loading="logsLoading">
+        <pre v-if="containerLogs">{{ containerLogs }}</pre>
+        <span v-else class="no-logs">{{ t('暂无日志') }}</span>
+      </div>
+    </el-dialog>
+
+    <el-dialog
+      v-model="createDialogVisible"
+      :title="t('创建容器')"
+      width="500px"
+    >
+      <div class="create-form">
+        <div class="form-group">
+          <label class="form-label">{{ t('容器名称') }}</label>
+          <input v-model="createForm.name" class="form-input" :placeholder="t('请输入容器名称')" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ t('镜像') }}</label>
+          <input v-model="createForm.image" class="form-input" :placeholder="t('例如: nginx:latest')" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ t('端口映射') }}</label>
+          <input v-model="createForm.ports" class="form-input" :placeholder="t('例如: 8080:80')" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">{{ t('环境变量') }}</label>
+          <textarea v-model="createForm.env" class="form-textarea" :placeholder="t('每行一个，例如: KEY=value')" rows="3"></textarea>
+        </div>
+      </div>
+      <template #footer>
+        <button class="btn-secondary" @click="createDialogVisible = false">{{ t('取消') }}</button>
+        <button class="btn-primary" @click="handleCreate" :disabled="createLoading">
+          {{ createLoading ? t('创建中...') : t('创建') }}
+        </button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -466,9 +623,88 @@ onMounted(() => fetchContainerList())
   color: var(--site-context-focus-color);
 }
 
+.btn-link.success {
+  color: #67c23a;
+}
+
+.btn-link.warning {
+  color: #e6a23c;
+}
+
 .loading-cell {
   text-align: center;
   padding: 40px;
   color: var(--color-text-secondary);
+}
+
+.log-content {
+  max-height: 500px;
+  overflow: auto;
+  background: #1e1e1e;
+  padding: 16px;
+}
+
+.log-content pre {
+  margin: 0;
+  color: #d4d4d4;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.no-logs {
+  color: #757575;
+  font-size: 14px;
+}
+
+.create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.form-input {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  font-size: 14px;
+  color: var(--color-text-primary);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.form-input:focus {
+  border-color: var(--site-context-highlight-color);
+}
+
+.form-textarea {
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--color-text-primary);
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.15s ease;
+}
+
+.form-textarea:focus {
+  border-color: var(--site-context-highlight-color);
 }
 </style>

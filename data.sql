@@ -1,23 +1,16 @@
--- ============================================================
--- LeafVision 数据库初始化脚本
--- 基础设施可观测性平台
--- ============================================================
-
 DROP DATABASE IF EXISTS leaf_vision;
 CREATE DATABASE leaf_vision DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 USE leaf_vision;
 
--- ============================================================
--- 服务器表：存储被监控的服务器信息
--- ============================================================
 CREATE TABLE IF NOT EXISTS servers (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
     name VARCHAR(100) NOT NULL COMMENT '服务器名称',
     ip VARCHAR(50) NOT NULL COMMENT '服务器IP地址',
     port INT NOT NULL COMMENT '服务端口',
-    type VARCHAR(50) NOT NULL COMMENT '服务器类型：prometheus-master/prometheus-node/alertmanager',
+    type VARCHAR(50) NOT NULL COMMENT '服务器类型：prometheus-master/prometheus-node/alertmanager/docker',
     status VARCHAR(20) DEFAULT 'unknown' COMMENT '状态：online/offline/unknown',
+    docker_port INT DEFAULT 2375 COMMENT 'Docker API端口',
     cpu_usage DOUBLE COMMENT 'CPU使用率(%)',
     memory_usage DOUBLE COMMENT '内存使用率(%)',
     version VARCHAR(50) COMMENT '版本号',
@@ -30,9 +23,6 @@ CREATE TABLE IF NOT EXISTS servers (
     INDEX idx_type (type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='服务器信息表';
 
--- ============================================================
--- 告警表：存储告警事件信息
--- ============================================================
 CREATE TABLE IF NOT EXISTS alerts (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
     fingerprint VARCHAR(100) UNIQUE COMMENT '告警指纹，用于去重',
@@ -56,9 +46,6 @@ CREATE TABLE IF NOT EXISTS alerts (
     INDEX idx_fingerprint (fingerprint)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='告警事件表';
 
--- ============================================================
--- 告警规则表：存储告警规则配置
--- ============================================================
 CREATE TABLE IF NOT EXISTS alert_rules (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
     name VARCHAR(255) NOT NULL COMMENT '规则名称',
@@ -77,9 +64,6 @@ CREATE TABLE IF NOT EXISTS alert_rules (
     INDEX idx_severity (severity)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='告警规则表';
 
--- ============================================================
--- 用户表：存储系统用户信息
--- ============================================================
 CREATE TABLE IF NOT EXISTS user (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
     username VARCHAR(50) NOT NULL UNIQUE COMMENT '用户名',
@@ -96,9 +80,6 @@ CREATE TABLE IF NOT EXISTS user (
     INDEX idx_role_id (role_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户信息表';
 
--- ============================================================
--- 角色表：存储角色信息
--- ============================================================
 CREATE TABLE IF NOT EXISTS role (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
     role_code VARCHAR(50) NOT NULL UNIQUE COMMENT '角色编码',
@@ -109,9 +90,6 @@ CREATE TABLE IF NOT EXISTS role (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色信息表';
 
--- ============================================================
--- 权限表：存储权限信息
--- ============================================================
 CREATE TABLE IF NOT EXISTS permission (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
     permission_code VARCHAR(100) NOT NULL UNIQUE COMMENT '权限编码',
@@ -128,9 +106,6 @@ CREATE TABLE IF NOT EXISTS permission (
     INDEX idx_parent_id (parent_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='权限信息表';
 
--- ============================================================
--- 角色权限关联表：存储角色与权限的关联关系
--- ============================================================
 CREATE TABLE IF NOT EXISTS role_permission (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
     role_id BIGINT NOT NULL COMMENT '角色ID',
@@ -141,9 +116,6 @@ CREATE TABLE IF NOT EXISTS role_permission (
     INDEX idx_permission_id (permission_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色权限关联表';
 
--- ============================================================
--- 审计日志表：存储操作日志
--- ============================================================
 CREATE TABLE IF NOT EXISTS audit_log (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
     user_id BIGINT COMMENT '操作用户ID',
@@ -164,9 +136,6 @@ CREATE TABLE IF NOT EXISTS audit_log (
     INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='审计日志表';
 
--- ============================================================
--- 系统设置表：存储系统配置
--- ============================================================
 CREATE TABLE IF NOT EXISTS settings (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
     setting_key VARCHAR(100) NOT NULL UNIQUE COMMENT '配置键',
@@ -178,9 +147,6 @@ CREATE TABLE IF NOT EXISTS settings (
     INDEX idx_setting_key (setting_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统设置表';
 
--- ============================================================
--- 日志表：存储采集的日志数据
--- ============================================================
 CREATE TABLE IF NOT EXISTS logs (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
     server_id BIGINT COMMENT '服务器ID',
@@ -195,9 +161,6 @@ CREATE TABLE IF NOT EXISTS logs (
     INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='日志数据表';
 
--- ============================================================
--- 链路追踪表：存储分布式链路追踪数据
--- ============================================================
 CREATE TABLE IF NOT EXISTS traces (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
     trace_id VARCHAR(100) NOT NULL COMMENT '追踪ID',
@@ -216,9 +179,6 @@ CREATE TABLE IF NOT EXISTS traces (
     INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='链路追踪表';
 
--- ============================================================
--- 密码重置令牌表：存储密码重置令牌
--- ============================================================
 CREATE TABLE IF NOT EXISTS password_reset_token (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
     user_id BIGINT NOT NULL COMMENT '用户ID',
@@ -231,9 +191,6 @@ CREATE TABLE IF NOT EXISTS password_reset_token (
     INDEX idx_expires_at (expires_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='密码重置令牌表';
 
--- ============================================================
--- 服务器分组表：存储服务器分组信息
--- ============================================================
 CREATE TABLE IF NOT EXISTS server_group (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
     name VARCHAR(100) NOT NULL COMMENT '分组名称',
@@ -247,9 +204,6 @@ CREATE TABLE IF NOT EXISTS server_group (
     INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='服务器分组表';
 
--- ============================================================
--- 服务器分组关联表：存储服务器与分组的关联关系
--- ============================================================
 CREATE TABLE IF NOT EXISTS server_group_relation (
     id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键ID',
     server_id BIGINT NOT NULL COMMENT '服务器ID',
@@ -260,17 +214,11 @@ CREATE TABLE IF NOT EXISTS server_group_relation (
     INDEX idx_group_id (group_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='服务器分组关联表';
 
--- ============================================================
--- 初始化角色数据
--- ============================================================
 INSERT INTO role (role_code, role_name, description) VALUES
 ('ADMIN', '系统管理员', '拥有系统所有权限，可以管理用户、角色、权限和系统配置'),
 ('OPERATOR', '运维人员', '可以管理服务器、容器、服务，查看监控数据和告警信息'),
 ('VIEWER', '访客', '只能查看监控数据和告警信息，无管理权限');
 
--- ============================================================
--- 初始化权限数据
--- ============================================================
 INSERT INTO permission (permission_code, permission_name, resource_type, resource_path, parent_id, sort_order) VALUES
 ('MONITOR', '监控中心', 'menu', '/monitor', 0, 1),
 ('SYSTEM', '系统管理', 'menu', '/system', 0, 2),
@@ -291,40 +239,23 @@ INSERT INTO permission (permission_code, permission_name, resource_type, resourc
 ('AUDIT_LOGS', '审计日志', 'menu', '/monitor/audit-logs', 2, 4),
 ('SETTINGS', '系统设置', 'menu', '/monitor/settings', 2, 5);
 
--- ============================================================
--- 初始化角色权限关联
--- ADMIN角色拥有所有权限
--- ============================================================
 INSERT INTO role_permission (role_id, permission_id)
 SELECT 1, id FROM permission;
 
--- ============================================================
--- OPERATOR角色权限
--- ============================================================
 INSERT INTO role_permission (role_id, permission_id)
 SELECT 2, id FROM permission 
 WHERE permission_code IN ('MONITOR', 'DASHBOARD', 'REALTIME', 'SERVERS', 'SERVER_GROUPS', 'CONTAINERS', 
                            'SERVICES', 'METRICS', 'LOGS', 'TRACES', 'ALERTS', 
                            'ALERT_RULES', 'SETTINGS');
 
--- ============================================================
--- VIEWER角色权限
--- ============================================================
 INSERT INTO role_permission (role_id, permission_id)
 SELECT 3, id FROM permission 
 WHERE permission_code IN ('MONITOR', 'DASHBOARD', 'REALTIME', 'METRICS', 
                            'LOGS', 'TRACES', 'ALERTS');
 
--- ============================================================
--- 初始化管理员账户
--- 默认密码：123456（生产环境请修改）
--- ============================================================
 INSERT INTO user (username, password, name, email, role_id, status) VALUES
 ('admin', '123456', '系统管理员', 'YangSZ03@foxmail.com', 1, 1);
 
--- ============================================================
--- 创建用户权限视图
--- ============================================================
 CREATE OR REPLACE VIEW v_user_permission AS
 SELECT 
     u.id AS user_id,

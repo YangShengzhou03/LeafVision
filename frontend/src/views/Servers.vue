@@ -1,13 +1,21 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Plus, Refresh } from '@element-plus/icons-vue'
-import { getServerList, createServer, updateServer, deleteServer } from '@/api'
+import { getServerList, createServer, updateServer, deleteServer, refreshServerStatus } from '@/api'
 import { ElMessage } from 'element-plus'
 import { SERVER_TYPES } from '@/constants'
 
+const { t } = useI18n()
 const loading = ref(false)
+const refreshing = ref(false)
 const dialogVisible = ref(false)
 const serverList = ref([])
+
+const formatPercent = (value) => {
+  if (value == null) return '0.00'
+  return Number(value).toFixed(2)
+}
 
 const formData = ref({ name: '', ip: '', port: 9090, type: 'prometheus-master' })
 
@@ -20,6 +28,21 @@ const fetchServerList = async () => {
     console.error(error)
   } finally {
     loading.value = false
+  }
+}
+
+const handleRefreshStatus = async () => {
+  refreshing.value = true
+  try {
+    const res = await refreshServerStatus()
+    if (res.code === 200) {
+      ElMessage.success(t('刷新成功'))
+      await fetchServerList()
+    }
+  } catch (error) {
+    ElMessage.error(t('刷新失败'))
+  } finally {
+    refreshing.value = false
   }
 }
 
@@ -37,7 +60,7 @@ const handleDelete = async (row) => {
   try {
     const res = await deleteServer(row.id)
     if (res.code === 200) {
-      ElMessage.success('删除成功')
+      ElMessage.success(t('删除成功'))
       fetchServerList()
     }
   } catch (error) {
@@ -47,16 +70,16 @@ const handleDelete = async (row) => {
 
 const handleSubmit = async () => {
   if (!formData.value.name || !formData.value.ip) {
-    ElMessage.warning('请填写完整信息')
+    ElMessage.warning(t('请填写完整信息'))
     return
   }
   try {
     if (formData.value.id) {
       await updateServer(formData.value.id, formData.value)
-      ElMessage.success('更新成功')
+      ElMessage.success(t('更新成功'))
     } else {
       await createServer(formData.value)
-      ElMessage.success('添加成功')
+      ElMessage.success(t('添加成功'))
     }
     dialogVisible.value = false
     fetchServerList()
@@ -73,15 +96,19 @@ onMounted(() => fetchServerList())
 <template>
   <div class="servers-page">
     <div class="page-header">
-      <span class="page-title">服务器列表</span>
+      <span class="page-title">{{ t('主机列表') }}</span>
       <div class="header-actions">
-        <button class="btn-secondary" @click="fetchServerList">
+        <button class="btn-secondary" @click="handleRefreshStatus" :disabled="refreshing">
           <el-icon><Refresh /></el-icon>
-          <span>刷新</span>
+          <span>{{ refreshing ? t('刷新中...') : t('刷新状态') }}</span>
+        </button>
+        <button class="btn-secondary" @click="fetchServerList" :disabled="loading">
+          <el-icon><Refresh /></el-icon>
+          <span>{{ t('刷新列表') }}</span>
         </button>
         <button class="btn-primary" @click="handleAdd">
           <el-icon><Plus /></el-icon>
-          <span>添加</span>
+          <span>{{ t('添加') }}</span>
         </button>
       </div>
     </div>
@@ -90,14 +117,14 @@ onMounted(() => fetchServerList())
       <table class="data-table">
         <thead>
           <tr>
-            <th>服务器</th>
-            <th>类型</th>
-            <th>状态</th>
-            <th>CPU</th>
-            <th>内存</th>
-            <th>版本</th>
-            <th>运行时间</th>
-            <th>操作</th>
+            <th>{{ t('名称') }}</th>
+            <th>{{ t('类型') }}</th>
+            <th>{{ t('状态') }}</th>
+            <th>{{ t('CPU') }}</th>
+            <th>{{ t('内存') }}</th>
+            <th>{{ t('版本') }}</th>
+            <th>{{ t('运行时间') }}</th>
+            <th>{{ t('操作') }}</th>
           </tr>
         </thead>
         <tbody v-if="!loading">
@@ -113,7 +140,7 @@ onMounted(() => fetchServerList())
             </td>
             <td>
               <span :class="['status-badge', server.status === 'online' ? 'online' : 'offline']">
-                {{ server.status === 'online' ? '在线' : '离线' }}
+                {{ server.status === 'online' ? t('在线') : t('离线') }}
               </span>
             </td>
             <td>
@@ -121,7 +148,7 @@ onMounted(() => fetchServerList())
                 <div class="progress-bar">
                   <div class="progress-fill" :style="{ width: (server.cpuUsage || 0) + '%' }"></div>
                 </div>
-                <span class="progress-text">{{ server.cpuUsage || 0 }}%</span>
+                <span class="progress-text">{{ formatPercent(server.cpuUsage) }}%</span>
               </div>
             </td>
             <td>
@@ -129,49 +156,49 @@ onMounted(() => fetchServerList())
                 <div class="progress-bar memory">
                   <div class="progress-fill" :style="{ width: (server.memoryUsage || 0) + '%' }"></div>
                 </div>
-                <span class="progress-text">{{ server.memoryUsage || 0 }}%</span>
+                <span class="progress-text">{{ formatPercent(server.memoryUsage) }}%</span>
               </div>
             </td>
             <td>{{ server.version }}</td>
             <td>{{ server.uptime }}</td>
             <td>
               <div class="action-btns">
-                <button class="btn-link" @click="handleEdit(server)">编辑</button>
-                <button class="btn-link danger" @click="handleDelete(server)">删除</button>
+                <button class="btn-link" @click="handleEdit(server)">{{ t('编辑') }}</button>
+                <button class="btn-link danger" @click="handleDelete(server)">{{ t('删除') }}</button>
               </div>
             </td>
           </tr>
         </tbody>
       </table>
       <div v-if="loading" class="loading-state">
-        <span>加载中...</span>
+        <span>{{ t('加载中...') }}</span>
       </div>
       <div v-if="!loading && serverList.length === 0" class="empty-state">
-        <span>暂无数据</span>
+        <span>{{ t('暂无主机') }}</span>
       </div>
     </div>
 
     <div v-if="dialogVisible" class="dialog-overlay" @click.self="dialogVisible = false">
       <div class="dialog">
         <div class="dialog-header">
-          <span class="dialog-title">{{ formData.id ? '编辑服务器' : '添加服务器' }}</span>
+          <span class="dialog-title">{{ formData.id ? t('编辑主机') : t('添加主机') }}</span>
           <button class="dialog-close" @click="dialogVisible = false">×</button>
         </div>
         <div class="dialog-body">
           <div class="form-group">
-            <label class="form-label">名称</label>
-            <input v-model="formData.name" class="form-input" placeholder="输入服务器名称" />
+            <label class="form-label">{{ t('名称') }}</label>
+            <input v-model="formData.name" class="form-input" :placeholder="t('请输入名称')" />
           </div>
           <div class="form-group">
-            <label class="form-label">IP地址</label>
-            <input v-model="formData.ip" class="form-input" placeholder="输入IP地址" />
+            <label class="form-label">{{ t('IP地址') }}</label>
+            <input v-model="formData.ip" class="form-input" :placeholder="t('请输入IP地址')" />
           </div>
           <div class="form-group">
-            <label class="form-label">端口</label>
-            <input v-model.number="formData.port" type="number" class="form-input" placeholder="输入端口" />
+            <label class="form-label">{{ t('端口') }}</label>
+            <input v-model.number="formData.port" type="number" class="form-input" :placeholder="t('端口')" />
           </div>
           <div class="form-group">
-            <label class="form-label">类型</label>
+            <label class="form-label">{{ t('类型') }}</label>
             <select v-model="formData.type" class="form-select">
               <option v-for="item in SERVER_TYPES" :key="item.value" :value="item.value">
                 {{ item.label }}
@@ -180,8 +207,8 @@ onMounted(() => fetchServerList())
           </div>
         </div>
         <div class="dialog-footer">
-          <button class="btn-secondary" @click="dialogVisible = false">取消</button>
-          <button class="btn-primary" @click="handleSubmit">确定</button>
+          <button class="btn-secondary" @click="dialogVisible = false">{{ t('取消') }}</button>
+          <button class="btn-primary" @click="handleSubmit">{{ t('确认') }}</button>
         </div>
       </div>
     </div>

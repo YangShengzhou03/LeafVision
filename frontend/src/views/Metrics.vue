@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Download, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getServerList, queryMetrics } from '@/api'
@@ -12,6 +13,8 @@ import { GridComponent, TooltipComponent } from 'echarts/components'
 import VChart from 'vue-echarts'
 
 use([CanvasRenderer, LineChart, GridComponent, TooltipComponent])
+
+const { t } = useI18n()
 
 const queryForm = ref({ metric: 'up', serverId: null, timeRange: '1h' })
 
@@ -47,7 +50,7 @@ const fetchServerList = async () => {
 }
 
 const handleQuery = async () => {
-  if (!queryForm.value.serverId) return ElMessage.warning('请选择服务器')
+  if (!queryForm.value.serverId) return ElMessage.warning(t('请选择服务器'))
   loading.value = true
   try {
     const res = await queryMetrics(queryForm.value)
@@ -58,26 +61,26 @@ const handleQuery = async () => {
           time: new Date(item.timestamp * 1000).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
           value: parseFloat(item.value).toFixed(2)
         }))
-        ElMessage.success('查询成功')
+        ElMessage.success(t('查询成功'))
       } else {
         chartData.value = []
-        ElMessage.warning('没有查询到数据')
+        ElMessage.warning(t('暂无数据'))
       }
     } else {
-      ElMessage.error(res.message || '查询失败')
+      ElMessage.error(res.message || t('查询失败'))
     }
   } catch (error) {
     console.error(error)
-    ElMessage.error('查询失败')
+    ElMessage.error(t('查询失败'))
   } finally {
     loading.value = false
   }
 }
 
 const handleExport = () => {
-  if (!chartData.value.length) return ElMessage.warning('无数据')
+  if (!chartData.value.length) return ElMessage.warning(t('暂无数据'))
   downloadFile(chartData.value, `metrics_${Date.now()}.json`)
-  ElMessage.success('已导出')
+  ElMessage.success(t('导出成功'))
 }
 
 onMounted(() => fetchServerList())
@@ -87,21 +90,21 @@ onMounted(() => fetchServerList())
   <div class="metrics-page">
     <div class="query-card">
       <div class="card-header">
-        <span class="card-title">查询条件</span>
+        <span class="card-title">{{ t('查询条件') }}</span>
       </div>
       <div class="card-body">
         <div class="query-form">
           <div class="form-group">
-            <label class="form-label">服务器</label>
+            <label class="form-label">{{ t('服务器') }}</label>
             <select v-model="queryForm.serverId" class="form-select">
-              <option :value="null">选择服务器</option>
+              <option :value="null">{{ t('请选择服务器') }}</option>
               <option v-for="item in serverOptions" :key="item.value" :value="item.value">
                 {{ item.label }}
               </option>
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">指标</label>
+            <label class="form-label">{{ t('指标') }}</label>
             <select v-model="queryForm.metric" class="form-select">
               <option v-for="item in METRIC_OPTIONS" :key="item.value" :value="item.value">
                 {{ item.label }}
@@ -109,7 +112,7 @@ onMounted(() => fetchServerList())
             </select>
           </div>
           <div class="form-group">
-            <label class="form-label">时间范围</label>
+            <label class="form-label">{{ t('时间范围') }}</label>
             <select v-model="queryForm.timeRange" class="form-select">
               <option v-for="item in TIME_RANGE_OPTIONS" :key="item.value" :value="item.value">
                 {{ item.label }}
@@ -119,11 +122,11 @@ onMounted(() => fetchServerList())
           <div class="form-actions">
             <button class="btn-primary" @click="handleQuery" :disabled="loading">
               <el-icon><Search /></el-icon>
-              <span>查询</span>
+              <span>{{ t('查询') }}</span>
             </button>
             <button class="btn-secondary" @click="handleExport" :disabled="!chartData.length">
               <el-icon><Download /></el-icon>
-              <span>导出</span>
+              <span>{{ t('导出') }}</span>
             </button>
           </div>
         </div>
@@ -132,14 +135,14 @@ onMounted(() => fetchServerList())
 
     <div class="result-card">
       <div class="card-header">
-        <span class="card-title">查询结果</span>
+        <span class="card-title">{{ t('查询结果') }}</span>
       </div>
       <div class="card-body">
         <div v-if="chartData.length > 0" class="chart-container">
           <v-chart :option="chartOption" autoresize style="height: 380px" />
         </div>
         <div v-else class="empty-state">
-          <span class="empty-text">请先查询数据</span>
+          <span class="empty-text">{{ t('请先查询') }}</span>
         </div>
       </div>
     </div>

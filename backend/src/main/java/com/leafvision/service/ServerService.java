@@ -123,21 +123,21 @@ public class ServerService {
             JSONObject cpuResult = prometheusClient.query(
                     server.getIp(), 
                     server.getPort(), 
-                    "avg(rate(process_cpu_seconds_total[1m])) * 100"
+                    "100 - (avg by(instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[1m])) * 100)"
             );
             Double cpuUsage = prometheusClient.extractValueFromResult(cpuResult, "cpu");
-            if (cpuUsage != null) {
-                server.setCpuUsage(cpuUsage);
+            if (cpuUsage != null && !cpuUsage.isNaN()) {
+                server.setCpuUsage(Math.round(cpuUsage * 10.0) / 10.0);
             }
 
             JSONObject memResult = prometheusClient.query(
                     server.getIp(), 
                     server.getPort(), 
-                    "process_resident_memory_bytes / 1024 / 1024"
+                    "100 - ((node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100)"
             );
             Double memUsage = prometheusClient.extractValueFromResult(memResult, "memory");
-            if (memUsage != null) {
-                server.setMemoryUsage(memUsage);
+            if (memUsage != null && !memUsage.isNaN()) {
+                server.setMemoryUsage(Math.round(memUsage * 10.0) / 10.0);
             }
 
             JSONObject versionResult = prometheusClient.query(
@@ -156,8 +156,32 @@ public class ServerService {
                 }
             }
 
+            JSONObject uptimeResult = prometheusClient.query(
+                    server.getIp(), 
+                    server.getPort(), 
+                    "time() - process_start_time_seconds"
+            );
+            Double uptimeSeconds = prometheusClient.extractValueFromResult(uptimeResult, "uptime");
+            if (uptimeSeconds != null && !uptimeSeconds.isNaN() && uptimeSeconds > 0) {
+                server.setUptime(formatUptime(uptimeSeconds.longValue()));
+            }
+
         } catch (Exception e) {
             log.error("Failed to fetch Prometheus metrics for server: {}", server.getName(), e);
+        }
+    }
+
+    private String formatUptime(long seconds) {
+        long days = seconds / 86400;
+        long hours = (seconds % 86400) / 3600;
+        long minutes = (seconds % 3600) / 60;
+        
+        if (days > 0) {
+            return String.format("%dd %dh %dm", days, hours, minutes);
+        } else if (hours > 0) {
+            return String.format("%dh %dm", hours, minutes);
+        } else {
+            return String.format("%dm", minutes);
         }
     }
 

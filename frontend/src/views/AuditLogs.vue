@@ -1,7 +1,10 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Refresh, Search } from '@element-plus/icons-vue'
 import { getAuditLogs } from '@/api'
+
+const { t } = useI18n()
 
 const loading = ref(false)
 const auditLogs = ref([])
@@ -10,25 +13,25 @@ const filterModule = ref('')
 const filterOperation = ref('')
 const dateRange = ref([])
 
-const moduleOptions = [
-  { label: '全部', value: '' },
-  { label: '用户管理', value: 'user' },
-  { label: '角色管理', value: 'role' },
-  { label: '权限管理', value: 'permission' },
-  { label: '服务器管理', value: 'server' },
-  { label: '告警管理', value: 'alert' },
-  { label: '系统设置', value: 'settings' }
-]
+const moduleOptions = computed(() => [
+  { label: t('全部'), value: '' },
+  { label: t('用户管理'), value: 'user' },
+  { label: t('角色管理'), value: 'role' },
+  { label: t('权限管理'), value: 'permission' },
+  { label: t('服务器管理'), value: 'server' },
+  { label: t('告警管理'), value: 'alert' },
+  { label: t('系统设置'), value: 'settings' }
+])
 
-const operationOptions = [
-  { label: '全部', value: '' },
-  { label: '登录', value: 'LOGIN' },
-  { label: '登出', value: 'LOGOUT' },
-  { label: '新增', value: 'CREATE' },
-  { label: '修改', value: 'UPDATE' },
-  { label: '删除', value: 'DELETE' },
-  { label: '查看', value: 'VIEW' }
-]
+const operationOptions = computed(() => [
+  { label: t('全部'), value: '' },
+  { label: t('登录'), value: 'LOGIN' },
+  { label: t('登出'), value: 'LOGOUT' },
+  { label: t('创建'), value: 'CREATE' },
+  { label: t('更新'), value: 'UPDATE' },
+  { label: t('删除'), value: 'DELETE' },
+  { label: t('查看'), value: 'VIEW' }
+])
 
 const fetchAuditLogs = async () => {
   loading.value = true
@@ -74,12 +77,12 @@ const getOperationClass = (operation) => {
 
 const getOperationText = (operation) => {
   const textMap = {
-    'LOGIN': '登录',
-    'LOGOUT': '登出',
-    'CREATE': '新增',
-    'UPDATE': '修改',
-    'DELETE': '删除',
-    'VIEW': '查看'
+    'LOGIN': t('登录'),
+    'LOGOUT': t('登出'),
+    'CREATE': t('创建'),
+    'UPDATE': t('更新'),
+    'DELETE': t('删除'),
+    'VIEW': t('查看')
   }
   return textMap[operation] || operation
 }
@@ -89,7 +92,7 @@ const getStatusClass = (status) => {
 }
 
 const getStatusText = (status) => {
-  return status === 1 ? '成功' : '失败'
+  return status === 1 ? t('成功') : t('失败')
 }
 
 const formatDateTime = (dateStr) => {
@@ -115,11 +118,11 @@ onMounted(() => fetchAuditLogs())
 <template>
   <div class="audit-logs-page">
     <div class="page-header">
-      <span class="page-title">审计日志</span>
+      <span class="page-title">{{ t('审计日志') }}</span>
       <div class="header-actions">
         <button class="btn-secondary" @click="fetchAuditLogs" :disabled="loading">
           <el-icon><Refresh /></el-icon>
-          <span>刷新</span>
+          <span>{{ t('刷新') }}</span>
         </button>
       </div>
     </div>
@@ -131,7 +134,7 @@ onMounted(() => fetchAuditLogs())
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="搜索用户名、操作对象"
+            :placeholder="t('搜索用户名或目标')"
             class="search-input"
             @keyup.enter="handleSearch"
           />
@@ -146,8 +149,8 @@ onMounted(() => fetchAuditLogs())
             {{ item.label }}
           </option>
         </select>
-        <button class="btn-secondary" @click="handleSearch">搜索</button>
-        <button class="btn-secondary" @click="handleReset">重置</button>
+        <button class="btn-secondary" @click="handleSearch">{{ t('搜索') }}</button>
+        <button class="btn-secondary" @click="handleReset">{{ t('重置') }}</button>
       </div>
     </div>
 
@@ -155,14 +158,14 @@ onMounted(() => fetchAuditLogs())
       <table class="data-table">
         <thead>
           <tr>
-            <th>时间</th>
-            <th>用户</th>
-            <th>操作</th>
-            <th>模块</th>
-            <th>操作对象</th>
-            <th>详情</th>
-            <th>IP地址</th>
-            <th>状态</th>
+            <th>{{ t('时间') }}</th>
+            <th>{{ t('用户名') }}</th>
+            <th>{{ t('操作') }}</th>
+            <th>{{ t('模块') }}</th>
+            <th>{{ t('目标') }}</th>
+            <th>{{ t('详情') }}</th>
+            <th>{{ t('IP地址') }}</th>
+            <th>{{ t('状态') }}</th>
           </tr>
         </thead>
         <tbody v-if="!loading">
@@ -187,7 +190,7 @@ onMounted(() => fetchAuditLogs())
         </tbody>
         <tbody v-else>
           <tr>
-            <td colspan="8" class="loading-cell">加载中...</td>
+            <td colspan="8" class="loading-cell">{{ t('加载中...') }}</td>
           </tr>
         </tbody>
       </table>

@@ -9,6 +9,7 @@ public class Container {
     private String image;
     private String status;
     private String state;
+    private String ports;
     private Long serverId;
     private String serverName;
     private Map<String, Object> metrics = new HashMap<>();
@@ -23,6 +24,8 @@ public class Container {
     public void setStatus(String status) { this.status = status; }
     public String getState() { return state; }
     public void setState(String state) { this.state = state; }
+    public String getPorts() { return ports; }
+    public void setPorts(String ports) { this.ports = ports; }
     public Long getServerId() { return serverId; }
     public void setServerId(Long serverId) { this.serverId = serverId; }
     public String getServerName() { return serverName; }

@@ -1,9 +1,12 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Search, Refresh, Download } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getTraces } from '@/api'
 import { downloadFile } from '@/utils'
+
+const { t } = useI18n()
 
 const loading = ref(false)
 const traceList = ref([])
@@ -22,10 +25,10 @@ const handleSearch = async () => {
     const res = await getTraces(queryForm.value)
     if (res.code === 200) {
       traceList.value = res.data || []
-      ElMessage.success(`查询到 ${traceList.value.length} 条链路`)
+      ElMessage.success(t('查询成功'))
     }
   } catch (error) {
-    ElMessage.error('查询失败')
+    ElMessage.error(t('查询失败'))
   } finally {
     loading.value = false
   }
@@ -33,11 +36,11 @@ const handleSearch = async () => {
 
 const handleExport = () => {
   if (!traceList.value.length) {
-    ElMessage.warning('无数据可导出')
+    ElMessage.warning(t('暂无数据可导出'))
     return
   }
   downloadFile(traceList.value, `traces_${Date.now()}.json`)
-  ElMessage.success('导出成功')
+  ElMessage.success(t('导出成功'))
 }
 
 const handleViewDetail = (trace) => {
@@ -56,6 +59,11 @@ const getStatusClass = (status) => {
   return ''
 }
 
+const getStatusText = (status) => {
+  if (status === 'ok') return t('成功')
+  return t('失败')
+}
+
 const formatDateTime = (dateStr) => {
   if (!dateStr) return '-'
   return dateStr.replace('T', ' ').substring(0, 19)
@@ -68,54 +76,54 @@ onMounted(() => handleSearch())
   <div class="traces-page">
     <div class="query-card">
       <div class="card-header">
-        <span class="card-title">查询条件</span>
+        <span class="card-title">{{ t('查询条件') }}</span>
       </div>
       <div class="card-body">
         <div class="query-form">
           <div class="form-group">
-            <label class="form-label">服务名称</label>
+            <label class="form-label">{{ t('服务名称') }}</label>
             <input
               v-model="queryForm.service"
               type="text"
-              placeholder="输入服务名称"
+              :placeholder="t('服务名称')"
               class="form-input"
             />
           </div>
           <div class="form-group">
-            <label class="form-label">操作名称</label>
+            <label class="form-label">{{ t('操作名称') }}</label>
             <input
               v-model="queryForm.operation"
               type="text"
-              placeholder="输入操作名称"
+              :placeholder="t('操作名称')"
               class="form-input"
             />
           </div>
           <div class="form-group">
-            <label class="form-label">最小耗时</label>
+            <label class="form-label">{{ t('最小耗时') }}</label>
             <input
               v-model="queryForm.minDuration"
               type="text"
-              placeholder="如: 100ms"
+              placeholder="100ms"
               class="form-input"
             />
           </div>
           <div class="form-group">
-            <label class="form-label">最大耗时</label>
+            <label class="form-label">{{ t('最大耗时') }}</label>
             <input
               v-model="queryForm.maxDuration"
               type="text"
-              placeholder="如: 1s"
+              placeholder="1s"
               class="form-input"
             />
           </div>
           <div class="form-actions">
             <button class="btn-primary" @click="handleSearch" :disabled="loading">
               <el-icon><Search /></el-icon>
-              <span>查询</span>
+              <span>{{ t('搜索') }}</span>
             </button>
             <button class="btn-secondary" @click="handleExport" :disabled="!traceList.length">
               <el-icon><Download /></el-icon>
-              <span>导出</span>
+              <span>{{ t('导出') }}</span>
             </button>
           </div>
         </div>
@@ -124,21 +132,21 @@ onMounted(() => handleSearch())
 
     <div class="result-card">
       <div class="card-header">
-        <span class="card-title">链路列表</span>
-        <span class="trace-count">共 {{ traceList.length }} 条</span>
+        <span class="card-title">{{ t('链路列表') }}</span>
+        <span class="trace-count">{{ t('共') }} {{ traceList.length }} {{ t('条') }}</span>
       </div>
       <div class="card-body">
         <table class="data-table">
           <thead>
             <tr>
               <th>Trace ID</th>
-              <th>服务</th>
-              <th>操作</th>
-              <th>耗时</th>
-              <th>跨度数</th>
-              <th>状态</th>
-              <th>时间</th>
-              <th>操作</th>
+              <th>{{ t('服务') }}</th>
+              <th>{{ t('操作') }}</th>
+              <th>{{ t('耗时') }}</th>
+              <th>{{ t('跨度') }}</th>
+              <th>{{ t('状态') }}</th>
+              <th>{{ t('时间戳') }}</th>
+              <th>{{ t('操作') }}</th>
             </tr>
           </thead>
           <tbody v-if="!loading">
@@ -150,18 +158,18 @@ onMounted(() => handleSearch())
               <td>{{ trace.spanCount }}</td>
               <td>
                 <span :class="['status-badge', getStatusClass(trace.status)]">
-                  {{ trace.status === 'ok' ? '成功' : '失败' }}
+                  {{ getStatusText(trace.status) }}
                 </span>
               </td>
               <td>{{ formatDateTime(trace.startTime) }}</td>
               <td>
-                <button class="btn-link" @click="handleViewDetail(trace)">详情</button>
+                <button class="btn-link" @click="handleViewDetail(trace)">{{ t('详情') }}</button>
               </td>
             </tr>
           </tbody>
           <tbody v-else>
             <tr>
-              <td colspan="8" class="loading-cell">加载中...</td>
+              <td colspan="8" class="loading-cell">{{ t('加载中...') }}</td>
             </tr>
           </tbody>
         </table>
@@ -170,8 +178,8 @@ onMounted(() => handleSearch())
 
     <div v-if="selectedTrace" class="detail-card">
       <div class="card-header">
-        <span class="card-title">链路详情</span>
-        <button class="btn-close" @click="selectedTrace = null">关闭</button>
+        <span class="card-title">{{ t('链路详情') }}</span>
+        <button class="btn-close" @click="selectedTrace = null">{{ t('关闭') }}</button>
       </div>
       <div class="card-body">
         <div class="trace-info">
@@ -180,11 +188,11 @@ onMounted(() => handleSearch())
             <span class="info-value">{{ selectedTrace.traceId }}</span>
           </div>
           <div class="info-item">
-            <span class="info-label">总耗时:</span>
+            <span class="info-label">{{ t('总耗时') }}:</span>
             <span class="info-value">{{ formatDuration(selectedTrace.duration) }}</span>
           </div>
           <div class="info-item">
-            <span class="info-label">跨度数:</span>
+            <span class="info-label">{{ t('跨度数量') }}:</span>
             <span class="info-value">{{ selectedTrace.spanCount }}</span>
           </div>
         </div>

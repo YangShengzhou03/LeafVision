@@ -7,6 +7,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 
 @Component
@@ -30,7 +33,7 @@ public class PrometheusClient {
                     .bodyToMono(String.class)
                     .timeout(Duration.ofSeconds(5))
                     .block();
-            return response != null && response.contains("Prometheus is Healthy");
+            return response != null && response.contains("Healthy");
         } catch (Exception e) {
             log.warn("Prometheus health check failed for {}:{}", host, port, e);
             return false;
@@ -39,14 +42,10 @@ public class PrometheusClient {
 
     public JSONObject query(String host, Integer port, String query) {
         try {
+            String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
+            URI uri = URI.create(String.format("http://%s:%d/api/v1/query?query=%s", host, port, encodedQuery));
             String response = webClient.get()
-                    .uri(uriBuilder -> uriBuilder
-                            .scheme("http")
-                            .host(host)
-                            .port(port)
-                            .path("/api/v1/query")
-                            .queryParam("query", query)
-                            .build())
+                    .uri(uri)
                     .retrieve()
                     .bodyToMono(String.class)
                     .timeout(Duration.ofSeconds(10))
@@ -60,17 +59,11 @@ public class PrometheusClient {
 
     public JSONObject queryRange(String host, Integer port, String query, long start, long end, String step) {
         try {
+            String encodedQuery = URLEncoder.encode(query, StandardCharsets.UTF_8);
+            URI uri = URI.create(String.format("http://%s:%d/api/v1/query_range?query=%s&start=%d&end=%d&step=%s", 
+                    host, port, encodedQuery, start, end, step));
             String response = webClient.get()
-                    .uri(uriBuilder -> uriBuilder
-                            .scheme("http")
-                            .host(host)
-                            .port(port)
-                            .path("/api/v1/query_range")
-                            .queryParam("query", query)
-                            .queryParam("start", start)
-                            .queryParam("end", end)
-                            .queryParam("step", step)
-                            .build())
+                    .uri(uri)
                     .retrieve()
                     .bodyToMono(String.class)
                     .timeout(Duration.ofSeconds(30))

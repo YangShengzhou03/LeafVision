@@ -1,9 +1,11 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 
+const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
@@ -16,16 +18,16 @@ const form = ref({
   remember: false
 })
 
-const rules = {
+const rules = computed(() => ({
   username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 20, message: '用户名长度 3-20 个字符', trigger: 'blur' }
+    { required: true, message: t('请输入用户名'), trigger: 'blur' },
+    { min: 3, max: 20, message: t('用户名长度3-20个字符'), trigger: 'blur' }
   ],
   password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, max: 20, message: '密码长度 6-20 个字符', trigger: 'blur' }
+    { required: true, message: t('请输入密码'), trigger: 'blur' },
+    { min: 6, max: 20, message: t('密码长度6-20个字符'), trigger: 'blur' }
   ]
-}
+}))
 
 const formRef = ref(null)
 
@@ -44,12 +46,12 @@ const handleLogin = async () => {
         return
       }
 
-      ElMessage.success('登录成功，欢迎 ' + result.user.name)
+      ElMessage.success(t('登录成功') + ', ' + t('欢迎回来') + ' ' + result.user.name)
 
       const redirect = route.query.redirect
       router.push(redirect || '/monitor/dashboard')
     } catch (error) {
-      ElMessage.error('登录失败，请稍后重试')
+      console.error('Login error:', error)
     } finally {
       loading.value = false
     }
@@ -67,22 +69,22 @@ const handleBackHome = () => router.push('/')
         <span>LEAFVISION</span>
       </div>
       <div class="left-content">
-        <span class="left-tag">OBSERVABILITY PLATFORM</span>
-        <h2>精准洞察<br/>全域感知</h2>
-        <p>以工程精度重新定义基础设施可观测性</p>
+        <span class="left-tag">{{ t('基础设施可观测性') }}</span>
+        <h2>{{ t('精准洞察') }}<br/>{{ t('全面感知') }}</h2>
+        <p>{{ t('以工程级精度重新定义基础设施可观测性') }}</p>
         <div class="left-divider"></div>
         <div class="left-stats">
           <div class="left-stat">
             <span class="left-stat-value">99.9%</span>
-            <span class="left-stat-label">SLA</span>
+            <span class="left-stat-label">{{ t('SLA可用性') }}</span>
           </div>
           <div class="left-stat">
             <span class="left-stat-value">&lt;10ms</span>
-            <span class="left-stat-label">延迟</span>
+            <span class="left-stat-label">{{ t('采集延迟') }}</span>
           </div>
           <div class="left-stat">
             <span class="left-stat-value">24/7</span>
-            <span class="left-stat-label">守护</span>
+            <span class="left-stat-label">{{ t('全天候守护') }}</span>
           </div>
         </div>
       </div>
@@ -91,8 +93,8 @@ const handleBackHome = () => router.push('/')
     <div class="login-right">
       <div class="login-form-wrapper">
         <div class="form-header">
-          <h1>登录</h1>
-          <p>访问您的监控控制台</p>
+          <h1>{{ t('登录') }}</h1>
+          <p>{{ t('登录您的账户以继续') }}</p>
         </div>
 
         <el-form
@@ -103,21 +105,21 @@ const handleBackHome = () => router.push('/')
           @submit.prevent="handleLogin"
         >
           <el-form-item prop="username">
-            <div class="field-label">用户名</div>
+            <div class="field-label">{{ t('用户名') }}</div>
             <el-input
               v-model="form.username"
-              placeholder="请输入用户名"
+              :placeholder="t('请输入用户名')"
               clearable
               @keyup.enter="handleLogin"
             />
           </el-form-item>
 
           <el-form-item prop="password">
-            <div class="field-label">密码</div>
+            <div class="field-label">{{ t('密码') }}</div>
             <el-input
               v-model="form.password"
               :type="showPassword ? 'text' : 'password'"
-              placeholder="请输入密码"
+              :placeholder="t('请输入密码')"
               @keyup.enter="handleLogin"
             >
               <template #suffix>
@@ -125,15 +127,15 @@ const handleBackHome = () => router.push('/')
                   class="password-toggle"
                   @click="showPassword = !showPassword"
                 >
-                  {{ showPassword ? '隐藏' : '显示' }}
+                  {{ showPassword ? t('隐藏密码') : t('显示密码') }}
                 </span>
               </template>
             </el-input>
           </el-form-item>
 
           <div class="form-options">
-            <el-checkbox v-model="form.remember">记住我</el-checkbox>
-            <router-link to="/forgot-password" class="forgot-link">忘记密码？</router-link>
+            <el-checkbox v-model="form.remember">{{ t('记住我') }}</el-checkbox>
+            <router-link to="/forgot-password" class="forgot-link">{{ t('忘记密码') }}</router-link>
           </div>
 
           <el-form-item>
@@ -143,18 +145,18 @@ const handleBackHome = () => router.push('/')
               :disabled="loading"
               @click="handleLogin"
             >
-              {{ loading ? '登录中...' : '登 录' }}
+              {{ loading ? t('登录中...') : t('登录') }}
             </button>
           </el-form-item>
         </el-form>
 
         <div class="form-footer">
-          <span>还没有账户？</span>
-          <router-link to="/register" class="register-link">立即注册</router-link>
+          <span>{{ t('没有账户？') }}</span>
+          <router-link to="/register" class="register-link">{{ t('立即注册') }}</router-link>
         </div>
 
         <div class="demo-hint">
-          <span class="demo-text">演示账户：admin / operator / viewer，密码均为 123456</span>
+          <span class="demo-text">LEAFVISION: admin / operator / viewer, {{ t('密码') }}: 123456</span>
         </div>
       </div>
     </div>

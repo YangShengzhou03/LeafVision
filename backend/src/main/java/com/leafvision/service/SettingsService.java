@@ -31,6 +31,7 @@ public class SettingsService {
         defaults.put("dataRetentionDays", "30");
         defaults.put("metricsInterval", "15");
         defaults.put("logLevel", "info");
+        defaults.put("watermarkEnabled", "false");
         
         for (Map.Entry<String, Object> entry : defaults.entrySet()) {
             Settings existing = settingsMapper.findByKey(entry.getKey());

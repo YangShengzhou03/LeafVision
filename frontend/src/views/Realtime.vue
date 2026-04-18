@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Refresh, VideoPause, VideoPlay } from '@element-plus/icons-vue'
 import { getServerList, getRealtimeMetrics } from '@/api'
 import { use } from 'echarts/core'
@@ -9,6 +10,13 @@ import { GridComponent, TooltipComponent } from 'echarts/components'
 import VChart from 'vue-echarts'
 
 use([CanvasRenderer, LineChart, GaugeChart, GridComponent, TooltipComponent])
+
+const { t } = useI18n()
+
+const formatPercent = (value) => {
+  if (value == null) return '0.00'
+  return Number(value).toFixed(2)
+}
 
 const serverList = ref([])
 const selectedServer = ref(null)
@@ -157,8 +165,9 @@ onUnmounted(() => {
   <div class="realtime-page">
     <div class="page-header">
       <div class="header-left">
-        <span class="page-title">实时监控</span>
-        <select v-model="selectedServer" class="server-select" @change="handleRefresh">
+        <span class="page-title">{{ t('实时监控') }}</span>
+        <select v-model="selectedServer" class="server-select" :disabled="serverList.length === 0" @change="handleRefresh">
+          <option v-if="serverList.length === 0" disabled value="">{{ t('暂无服务器') }}</option>
           <option v-for="server in serverList" :key="server.id" :value="server.id">
             {{ server.name }}
           </option>
@@ -167,11 +176,11 @@ onUnmounted(() => {
       <div class="header-actions">
         <button class="btn-secondary" @click="togglePause">
           <el-icon><component :is="isPaused ? VideoPlay : VideoPause" /></el-icon>
-          <span>{{ isPaused ? '继续' : '暂停' }}</span>
+          <span>{{ isPaused ? t('继续') : t('暂停') }}</span>
         </button>
         <button class="btn-primary" @click="handleRefresh" :disabled="loading">
           <el-icon><Refresh /></el-icon>
-          <span>刷新</span>
+          <span>{{ t('刷新') }}</span>
         </button>
       </div>
     </div>
@@ -179,8 +188,8 @@ onUnmounted(() => {
     <div class="charts-grid">
       <div class="chart-card">
         <div class="card-header">
-          <span class="card-title">CPU 使用率</span>
-          <span class="card-value">{{ realtimeData.cpu[realtimeData.cpu.length - 1]?.value || 0 }}%</span>
+          <span class="card-title">{{ t('CPU使用率') }}</span>
+          <span class="card-value">{{ formatPercent(realtimeData.cpu[realtimeData.cpu.length - 1]?.value) }}%</span>
         </div>
         <div class="card-body">
           <v-chart :option="cpuOption" autoresize style="height: 200px" />
@@ -189,8 +198,8 @@ onUnmounted(() => {
 
       <div class="chart-card">
         <div class="card-header">
-          <span class="card-title">内存使用率</span>
-          <span class="card-value">{{ realtimeData.memory[realtimeData.memory.length - 1]?.value || 0 }}%</span>
+          <span class="card-title">{{ t('内存使用率') }}</span>
+          <span class="card-value">{{ formatPercent(realtimeData.memory[realtimeData.memory.length - 1]?.value) }}%</span>
         </div>
         <div class="card-body">
           <v-chart :option="memoryOption" autoresize style="height: 200px" />
@@ -199,10 +208,10 @@ onUnmounted(() => {
 
       <div class="chart-card full-width">
         <div class="card-header">
-          <span class="card-title">网络流量</span>
+          <span class="card-title">{{ t('网络流量') }}</span>
           <div class="legend">
-            <span class="legend-item in">入站</span>
-            <span class="legend-item out">出站</span>
+            <span class="legend-item in">{{ t('入站') }}</span>
+            <span class="legend-item out">{{ t('出站') }}</span>
           </div>
         </div>
         <div class="card-body">
@@ -257,6 +266,12 @@ onUnmounted(() => {
 
 .server-select:focus {
   border-color: var(--site-context-highlight-color);
+}
+
+.server-select:disabled {
+  background: #f5f5f5;
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
 }
 
 .header-actions {

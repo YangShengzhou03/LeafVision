@@ -34,8 +34,8 @@ request.interceptors.response.use(
       ElMessage.error('请求的资源不存在')
     } else if (status >= 500) {
       ElMessage.error('服务器错误，请稍后重试')
-    } else {
-      ElMessage.error(error.response?.data?.message || '请求失败')
+    } else if (error.code === 'ERR_NETWORK' || error.code === 'ECONNREFUSED') {
+      ElMessage.error('无法连接到服务器，请检查后端服务是否启动')
     }
 
     return Promise.reject(error)

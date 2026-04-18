@@ -36,6 +36,8 @@ public class DashboardService {
 
         List<Server> servers = serverService.getAllServers();
         
+        refreshServerMetrics(servers);
+
         List<Map<String, Object>> statsCards = calculateStats(servers);
         data.setStatsCards(statsCards);
 
@@ -51,6 +53,76 @@ public class DashboardService {
         data.setServerList(servers);
 
         return data;
+    }
+
+    private void refreshServerMetrics(List<Server> servers) {
+        for (Server server : servers) {
+            if (!"online".equals(server.getStatus())) {
+                continue;
+            }
+            
+            try {
+                JSONObject cpuResult = prometheusClient.query(
+                    server.getIp(), server.getPort(),
+                    "100 - (avg by(instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[1m])) * 100)"
+                );
+                Double cpu = prometheusClient.extractValueFromResult(cpuResult, "cpu");
+                if (cpu != null && !cpu.isNaN()) {
+                    server.setCpuUsage(Math.round(cpu * 10.0) / 10.0);
+                }
+                
+                JSONObject memResult = prometheusClient.query(
+                    server.getIp(), server.getPort(),
+                    "100 - ((node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100)"
+                );
+                Double memory = prometheusClient.extractValueFromResult(memResult, "memory");
+                if (memory != null && !memory.isNaN()) {
+                    server.setMemoryUsage(Math.round(memory * 10.0) / 10.0);
+                }
+                
+                JSONObject versionResult = prometheusClient.query(
+                    server.getIp(), server.getPort(),
+                    "prometheus_build_info"
+                );
+                if (versionResult != null && "success".equals(versionResult.getString("status"))) {
+                    JSONObject data = versionResult.getJSONObject("data");
+                    JSONArray results = data.getJSONArray("result");
+                    if (results != null && !results.isEmpty()) {
+                        JSONObject labels = results.getJSONObject(0).getJSONObject("metric");
+                        if (labels != null) {
+                            server.setVersion(labels.getString("version"));
+                        }
+                    }
+                }
+                
+                JSONObject uptimeResult = prometheusClient.query(
+                    server.getIp(), server.getPort(),
+                    "time() - process_start_time_seconds"
+                );
+                Double uptimeSeconds = prometheusClient.extractValueFromResult(uptimeResult, "uptime");
+                if (uptimeSeconds != null && !uptimeSeconds.isNaN() && uptimeSeconds > 0) {
+                    server.setUptime(formatUptime(uptimeSeconds.longValue()));
+                } else {
+                    server.setUptime("N/A");
+                }
+            } catch (Exception e) {
+                log.warn("Failed to get metrics for server {}: {}", server.getName(), e.getMessage());
+            }
+        }
+    }
+
+    private String formatUptime(long seconds) {
+        long days = seconds / 86400;
+        long hours = (seconds % 86400) / 3600;
+        long minutes = (seconds % 3600) / 60;
+        
+        if (days > 0) {
+            return String.format("%dd %dh %dm", days, hours, minutes);
+        } else if (hours > 0) {
+            return String.format("%dh %dm", hours, minutes);
+        } else {
+            return String.format("%dm", minutes);
+        }
     }
 
     private List<Map<String, Object>> calculateStats(List<Server> servers) {
@@ -103,7 +175,7 @@ public class DashboardService {
             JSONObject result = prometheusClient.queryRange(
                     server.getIp(), 
                     server.getPort(),
-                    "avg(rate(process_cpu_seconds_total[1m])) * 100",
+                    "100 - (avg by(instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[1m])) * 100)",
                     start, end, "5m"
             );
             
@@ -115,16 +187,11 @@ public class DashboardService {
                     if (values != null) {
                         for (int i = 0; i < values.size(); i++) {
                             JSONArray point = values.getJSONArray(i);
-                            trend.add(point.getDouble(1));
+                            Double val = point.getDouble(1);
+                            trend.add(val != null && !val.isNaN() ? val : 0);
                         }
                     }
                 }
-            }
-        }
-        
-        if (trend.isEmpty()) {
-            for (int i = 0; i < 12; i++) {
-                trend.add(30 + Math.random() * 20);
             }
         }
         
@@ -146,7 +213,7 @@ public class DashboardService {
             JSONObject result = prometheusClient.queryRange(
                     server.getIp(), 
                     server.getPort(),
-                    "process_resident_memory_bytes / 1024 / 1024",
+                    "100 - ((node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100)",
                     start, end, "5m"
             );
             
@@ -158,16 +225,11 @@ public class DashboardService {
                     if (values != null) {
                         for (int i = 0; i < values.size(); i++) {
                             JSONArray point = values.getJSONArray(i);
-                            trend.add(point.getDouble(1));
+                            Double val = point.getDouble(1);
+                            trend.add(val != null && !val.isNaN() ? val : 0);
                         }
                     }
                 }
-            }
-        }
-        
-        if (trend.isEmpty()) {
-            for (int i = 0; i < 12; i++) {
-                trend.add(50 + Math.random() * 30);
             }
         }
         

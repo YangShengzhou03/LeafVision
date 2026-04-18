@@ -1,0 +1,20 @@
+export default {
+  '账户恢复': 'ACCOUNT RECOVERY',
+  '重置': 'Reset',
+  '密码': 'Password',
+  '恢复说明': 'Recover your account access via email verification',
+  '忘记密码': 'Forgot Password',
+  '输入邮箱说明': 'Enter your registered email, we will send a reset link',
+  '邮箱地址': 'Email Address',
+  '邮箱占位符': 'Enter your registered email',
+  '请输入邮箱': 'Please enter email',
+  '请输入有效邮箱': 'Please enter a valid email address',
+  '发送重置链接': 'Send Reset Link',
+  '发送中...': 'Sending...',
+  '发送成功': 'Reset link has been sent to your email',
+  '发送失败': 'Failed to send, please try again later',
+  '邮件已发送': 'Email Sent',
+  '邮件已发送说明': 'Reset link has been sent to {email}, please check your email and follow the instructions.',
+  '重新发送': 'Resend',
+  '返回登录': 'Back to Login'
+}
